@@ -49,21 +49,27 @@ void readconfig::read_file(char* filename){
     while(stream >> n){
         critical_nets.push_back(n);
     }
+    stream.str(std::string());
     stream.clear();
+    stream.str(std::string());
+    temp.clear();
     // read power nets
     getline(file,temp);
     pos = temp.find(" ");
     num = temp.substr(++pos);
-    stream.str(num);
+    stream<<num;
     while(stream >> n){
         critical_nets.push_back(n);
     }
+    
     stream.clear();
+    stream.str(std::string());
+    temp.clear();
     // read ground nets
     getline(file,temp);
     pos = temp.find(" ");
     num = temp.substr(++pos);
-    stream.str(num);
+    stream<<num;
     while(stream >> n){
         critical_nets.push_back(n);
     }
@@ -77,7 +83,7 @@ void readconfig::dump(){
     cout<<"Process = "<<process<<endl;
     cout<<"Critical = ";
     for(auto i:critical_nets){
-        cout<<i;
+        cout<<i<<" ";
     }
     cout<<endl;
     cout<<"Power = ";

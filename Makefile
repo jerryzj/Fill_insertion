@@ -8,4 +8,4 @@ g++:
 test1:
 	./main ./circuit1/circuit1.conf
 clean:
-	rm *.out src/*.hpp.gch
+	rm main src/*.hpp.gch
