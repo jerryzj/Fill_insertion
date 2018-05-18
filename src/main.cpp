@@ -21,47 +21,48 @@ class readconfig{
 };
 
 void readconfig::read_file(char* filename){
-    fstream file;
+    ifstream file(filename);
     string temp;
     int n = 0;
     size_t pos;
     string num;
 
-    file.open(filename,ios::in);
-    getline(cin,temp);
-    pos = temp.find("design: ");
-    input = temp.substr(pos);
-    getline(cin,temp);
-    pos = temp.find("output: ");
-    output = temp.substr(pos);
-    getline(cin,temp);
-    pos = temp.find("rule_file: ");
-    rule = temp.substr(pos);
-    getline(cin,temp);
-    pos = temp.find("process_file: ");
-    process = temp.substr(pos);
+    cout<<"Start reading\n";
+    getline(file,temp);
+    pos = temp.find(" ");
+    input = temp.substr(++pos);
+    getline(file,temp);
+    pos = temp.find(" ");
+    output = temp.substr(++pos);
+    getline(file,temp);
+    pos = temp.find(" ");
+    rule = temp.substr(++pos);
+    getline(file,temp);
+    pos = temp.find(" ");
+    process = temp.substr(++pos);
     // read critical nets
-    getline(cin,temp);
-    pos = temp.find("critical_nets: ");
-    num = temp.substr(pos);
+    getline(file,temp);
+    pos = temp.find(" ");
+    num = temp.substr(++pos);
+    cout<<num;
     stringstream stream(num);
     while(stream >> n){
         critical_nets.push_back(n);
     }
     stream.clear();
     // read power nets
-    getline(cin,temp);
-    pos = temp.find("power_nets: ");
-    num = temp.substr(pos);
+    getline(file,temp);
+    pos = temp.find(" ");
+    num = temp.substr(++pos);
     stream.str(num);
     while(stream >> n){
         critical_nets.push_back(n);
     }
     stream.clear();
     // read ground nets
-    getline(cin,temp);
-    pos = temp.find("ground_nets: ");
-    num = temp.substr(pos);
+    getline(file,temp);
+    pos = temp.find(" ");
+    num = temp.substr(++pos);
     stream.str(num);
     while(stream >> n){
         critical_nets.push_back(n);
@@ -81,7 +82,7 @@ void readconfig::dump(){
     cout<<endl;
     cout<<"Power = ";
     for(auto i:power_nets){
-        cout<<i;
+        cout<<i<<" ";
     }
     cout<<endl;
     cout<<"Ground = ";
@@ -98,6 +99,7 @@ int main(int argc ,char *argv[]){
         cerr<<"Use ./a.out (config filename)\n";
         return -1;
     }
+    //cout<<argv[1];
     config.read_file(argv[1]);
     config.dump();
     return 0;
