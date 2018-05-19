@@ -6,11 +6,11 @@
 
 using namespace std;
 
+// Class/ Structure declarations
 class readconfig{
     public:
         void read_file(char* filename);
         void dump();
-    private:
         string input;   // input filename
         string output;  // output filename
         string rule;    // rule filename
@@ -20,6 +20,31 @@ class readconfig{
         vector<int> ground_nets;
 };
 
+struct rule{
+    int layer_id;
+    enum layer_type{
+        CONDUCTOR,VIA
+    };
+    // Note the data type used here
+    // may need to use double(?)
+    int min_width;
+    int min_space;
+    int max_fill_width;
+    double min_density;
+    double max_density;
+};
+
+class readrule{
+    public:
+        void read_file(char* filename);
+        void dump();
+    private:
+        int rule_num;   // number of rules
+        vector<rule> rules;
+
+};
+
+// Memeber function implementations
 void readconfig::read_file(char* filename){
     ifstream file(filename);
     string temp;
@@ -99,9 +124,14 @@ void readconfig::dump(){
     }
     cout<<endl;
 }
+
+void readrule::read_file(char* filename){
+
+}
 // ./a.out (config filename)
 int main(int argc ,char *argv[]){
     readconfig config;
+    readrule rule;
 
     if(argc != 2){
         cerr<<"Use ./a.out (config filename)\n";
@@ -109,5 +139,7 @@ int main(int argc ,char *argv[]){
     }
     config.read_file(argv[1]);
     config.dump();
+    // need to reuse argv[1] or prompt a nother argument
+    //rule.read_file(" ");
     return 0;
 }
