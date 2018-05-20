@@ -1,6 +1,15 @@
 #include "parser.hpp"
 
 int main(int argc ,char *argv[]){
+    // Cin/Cout Optimization
+    // Ref: https://tinyurl.com/z4pprcc
+    // Turn off sync between cin/cout and stdin/stdout
+    // Therefore we can't use scanf/printf anymore
+    ios::sync_with_stdio(false);
+    // Untie cin and cout
+    // Therefore we can't prompt user to input sth.
+    cin.tie(0);
+
     string filename = argv[1];    
     readconfig config;  // circuit config file
     readrule rule;      // rule.dat file
