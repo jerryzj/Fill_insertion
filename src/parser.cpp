@@ -165,6 +165,16 @@ void readlayout::read_file(char* filename){
     net_temp.net_id  = 0;
     net_temp.layer   = 0;
     net_temp.type    = Bound;
+    
+    // set offset 
+    offset_x = net_temp.rect.bl_x;
+    offset_y = net_temp.rect.bl_y;
+    // normalize boundary position
+    net_temp.rect.bl_x -= offset_x;
+    net_temp.rect.bl_y -= offset_y;
+    net_temp.rect.tr_x -= offset_x;
+    net_temp.rect.tr_y -= offset_y;
+
 
     net_list.push_back(net_temp);
 
@@ -176,6 +186,13 @@ void readlayout::read_file(char* filename){
             &net_temp.rect.tr_x, &net_temp.rect.tr_y,
             &net_temp.net_id,    &net_temp.layer,
             c_str );
+
+        // normalize net position 
+        net_temp.rect.bl_x -= offset_x;
+        net_temp.rect.bl_y -= offset_y;
+        net_temp.rect.tr_x -= offset_x;
+        net_temp.rect.tr_y -= offset_y;
+
         if (strcmp(c_str,"normal") == 0) {
             net_temp.type = Normal;
         }

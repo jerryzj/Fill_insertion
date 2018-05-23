@@ -33,5 +33,6 @@ int main(int argc ,char *argv[]){
     filename.replace(pos+1,filename.length()-pos,config.input);
     layout.read_file((char*)filename.c_str());
     
+    layout.dump();
     return 0;
 }
