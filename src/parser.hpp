@@ -48,7 +48,7 @@ class readrule{
         vector<rule> rules;
 }; 
 
-class layout{
+class readlayout{
 public:
     enum NetType {Normal, Fill};
     struct rectangle{
@@ -63,7 +63,7 @@ public:
         int layer;
         rectangle rect;
     };
-    layout();
+    //readlayout();
     void read_file(char* filename);
 
     rectangle boundary;
