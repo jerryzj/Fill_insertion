@@ -2,9 +2,9 @@
 # main.cpp part.hpp utility.hpp part.cpp utility.cpp
 #SRC = src
 all:
-	clang++ -std=c++11 -Wall src/main.cpp -o main
+	clang++ -std=c++11 -Wall src/main.cpp src/parser.cpp -o main
 g++:
-	g++ -std=c++11 -Wall src/main.cpp -o main
+	g++ -std=c++11 -Wall src/main.cpp src/parser.cpp -o main
 test1:
 	./main ./circuit1/circuit1.conf
 test2:
@@ -16,4 +16,7 @@ test4:
 test5:
 	./main ./circuit5/circuit5.config
 clean:
-	rm main src/*.hpp.gch
+	rm main
+# Use address sanitizer to check memory
+mem_check:
+	clang++ -std=c++11 -Wall src/main.cpp src/parser.cpp -o main -fsanitize=address
