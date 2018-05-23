@@ -142,7 +142,7 @@ void readrule::dump(){
 }
 
 readlayout::readlayout() {
-    net_list.reserve(4E5);
+    net_list.reserve(3E5); 
 }
 
 void readlayout::read_file(char* filename){
