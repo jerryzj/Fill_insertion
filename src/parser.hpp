@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <string.h>
 
 using namespace std;
 
@@ -50,7 +51,7 @@ class readrule{
 
 class readlayout{
 public:
-    enum NetType {Normal, Fill};
+    enum NetType {Normal, Fill, Bound, NA};
     struct rectangle{
         int bl_x;   // buttom left X
         int bl_y;   // buttom left y
@@ -59,18 +60,22 @@ public:
     };
     struct net{
         int poly_id;
+        rectangle rect;
         int net_id;
         int layer;
-        rectangle rect;
+        NetType type;
     };
-    //readlayout();
+    readlayout();
     void read_file(char* filename);
-
-    rectangle boundary;
+    void dump();
+    
+    // list of nets 
+    // net_list[0] stores "layout boundary"
+    vector<net> net_list; 
     // need window size to set bin size: bin = 0.5 * window 
     int bin_size; 
     // 3D array layer*row*col
-    // layer = 9 (L0 to L8), need index conversion 
+    // layer = 9 (L1 to L9), L0 stores nothing 
     
 
 };
