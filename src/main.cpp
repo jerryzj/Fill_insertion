@@ -13,6 +13,7 @@ int main(int argc ,char *argv[]){
     string filename = argv[1];    
     readconfig config;  // circuit config file
     readrule rule;      // rule.dat file
+    readlayout layout;
     size_t pos;         // position of certain char
 
     if(argc != 2){
@@ -28,6 +29,9 @@ int main(int argc ,char *argv[]){
     // for testing 
     rule.read_file((char*)filename.c_str());
     rule.dump();
+    pos = filename.find_last_of('/');
+    filename.replace(pos+1,filename.length()-pos,config.input);
+    layout.read_file((char*)filename.c_str());
     
     return 0;
 }

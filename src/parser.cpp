@@ -141,17 +141,21 @@ void readrule::dump(){
     }
 }
 
-void layout::read_file(char* filename){
+void readlayout::read_file(char* filename){
     // here filename should be ./circuit#/circut*.cut
     ifstream file(filename);
     string temp;
+    //string line;
     size_t pos;
 
     // read layout boundary
     getline(file,temp);
-
     pos = temp.find(";");
-    temp = temp.substr(0, temp.size() - pos);
-
-    cout << temp << endl; 
+    temp = temp.substr(0, pos);
+    sscanf(temp.c_str(),"%d %d %d %d",
+            &boundary.bl_x, &boundary.bl_y, &boundary.tr_x, &boundary.tr_y);
+    while(getline(file,temp)){
+        sscanf(temp.c_str(),"%d %d %d %d %d %d %d %s");
+    }
+    file.close();
 }
