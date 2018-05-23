@@ -140,3 +140,18 @@ void readrule::dump(){
         cout<<i.max_density<<endl;
     }
 }
+
+void layout::read_file(char* filename){
+    // here filename should be ./circuit#/circut*.cut
+    ifstream file(filename);
+    string temp;
+    size_t pos;
+
+    // read layout boundary
+    getline(file,temp);
+
+    pos = temp.find(";");
+    temp = temp.substr(0, temp.size() - pos);
+
+    cout << temp << endl; 
+}
