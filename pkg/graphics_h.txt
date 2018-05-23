@@ -1,0 +1,2 @@
+installation guide
+https://mccshreyas.wordpress.com/2017/04/09/how-to-cc-graphics-program-in-ubuntu-install-libgraph-graphics-h-in-ubuntu/
