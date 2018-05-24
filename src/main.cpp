@@ -42,7 +42,7 @@ int main(int argc ,char *argv[]){
     //cout<<filename;
     // for testing 
     layout.read_file((char*)filename.c_str());
-    // layout.dump();
+    layout.dump();
     // Temporary set bin size = 5000
     layout.set_bin_size(5000);
     layout.create3Dbin();

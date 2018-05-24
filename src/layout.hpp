@@ -4,24 +4,26 @@
 #include <fstream>
 #include <vector>
 #include <string.h>
+#include "rectangle.hpp"
 
 using namespace std;
 
-// create another file UTILITY
+// create another file rectangle
+/*
 struct rectangle{
         int bl_x;   // buttom left X
         int bl_y;   // buttom left y
         int tr_x;   // top right x
         int tr_y;   // top right y
 };
-
+*/
 // TODO: calculate overlapped area
 // TODO: calculate distance between two rectangles(DRC)
 
 class Layout{
 public:    
     struct net{
-        rectangle rect; 
+        Rectangle rect; 
         int net_id;
         int layer;      // layer 1~9
     };
@@ -62,7 +64,7 @@ public:
     private:
     // need window size to set bin size: bin = 0.5 * window
     int bin_size;
-    // initial layout boundary offset 
+    // initial layout boundary offset
     int offset_x; 
     int offset_y;
 };
