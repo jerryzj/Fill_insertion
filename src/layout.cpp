@@ -120,11 +120,11 @@ void Layout::dump(){
             << v.layer << endl; 
     }
 }
-void bin_normal_area(int _l, int _x, int _y)
+void Layout::bin_normal_area(int _l, int _x, int _y)
 {
     int temp_area;
     Rectangle bin_rect( _x*bin_size, _y*bin_size,
-                        (_x+1)+bin_size, (_y+1)*bin_size);
+                        (_x+1)*bin_size, (_y+1)*bin_size);
     // calculate normal area
     
     temp_area = 0;
