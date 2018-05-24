@@ -72,6 +72,8 @@ void Layout::set_bin_size(int size){
 }
 
 void Layout::create3Dbin(){
+    // since tr_x or tr_y / bin_size is always integer
+    // the range right 
     int range_x = net_list[0].rect.tr_x / bin_size;
     int range_y = net_list[0].rect.tr_y / bin_size;
     
@@ -85,14 +87,17 @@ void Layout::create3Dbin(){
 }
 
 void Layout::bin_mapping(){
+    // 5/24 revise bin assignment
+    // bl, tr = (0, 5000), (0, 5000) will only be 
+    // assigned to grid[0][0]
     int layer = 0;
     Rectangle bin_index; 
     for(int i = 1; i < (int)net_list.size(); i++){
         layer = net_list[i].layer;
         bin_index.bl_x = net_list[i].rect.bl_x / bin_size;
         bin_index.bl_y = net_list[i].rect.bl_y / bin_size;
-        bin_index.tr_x = net_list[i].rect.tr_x / bin_size;
-        bin_index.tr_y = net_list[i].rect.tr_y / bin_size;
+        bin_index.tr_x = (net_list[i].rect.tr_x-1) / bin_size; 
+        bin_index.tr_y = (net_list[i].rect.tr_y-1) / bin_size;
         for(int j = bin_index.bl_x ; j <= bin_index.tr_x; j++){
             for(int k = bin_index.bl_y; k <= bin_index.tr_y; k++){
                 grid[layer][j][k].normal->push_back(i);
