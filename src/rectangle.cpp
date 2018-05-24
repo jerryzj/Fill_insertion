@@ -13,8 +13,8 @@ int Rectangle::area()
 {
     int area = (tr_x-bl_x)*(tr_y-bl_y);
 
-    if (area <= 0)
+    if (area <= 0){
         cerr << "The rectangle has area <=0 " << endl;
-    
+    }
     return area;
 }
