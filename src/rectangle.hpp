@@ -4,6 +4,7 @@
 #include <fstream>
 #include <vector>
 #include <string.h>
+#include <algorithm>
 using namespace std;
 
 
