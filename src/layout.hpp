@@ -8,16 +8,6 @@
 
 using namespace std;
 
-// create another file rectangle
-/*
-struct rectangle{
-        int bl_x;   // buttom left X
-        int bl_y;   // buttom left y
-        int tr_x;   // top right x
-        int tr_y;   // top right y
-};
-*/
-// TODO: calculate overlapped area
 // TODO: calculate distance between two rectangles(DRC)
 
 class Layout{

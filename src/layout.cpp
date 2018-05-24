@@ -24,11 +24,6 @@ void Layout::read_file(char* filename){
     temp = temp.substr(0, pos);
 
     int _bl_x, _bl_y, _tr_x, _tr_y;
-//    sscanf(temp.c_str(),"%d %d %d %d",
-//           &net_temp.rect.bl_x, &net_temp.rect.bl_y, 
-//            &net_temp.rect.tr_x, &net_temp.rect.tr_y);
-//    net_temp.net_id  = 0;
-//    net_temp.layer   = 0;
     sscanf(temp.c_str(),"%d %d %d %d", &_bl_x, &_bl_y, &_tr_x, &_tr_y);
 
     // set offset
@@ -128,7 +123,7 @@ void Layout::bin_normal_area(int _l, int _x, int _y)
     // calculate normal area
     
     temp_area = 0;
-    for (auto i : *(grid[_i][_x][_y].normal)) {
+    for (auto i : *(grid[_l][_x][_y].normal)) {
         temp_area += area_overlap(bin_rect, normal_list[i].rect);
     }
 
