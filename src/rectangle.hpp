@@ -23,8 +23,9 @@ public:
     int area();
 
     friend class Layout;   // class Layout can access private member
+    // calculate overlapped area between two rectangles
     friend int area_overlap(const Rectangle &_r1, const Rectangle &_r2);
-    friend int rect_distance(const Rectangle &_r1, const Rectangle &_r2);
+    friend bool check_space(const Rectangle &_r1, const Rectangle &_r2, int margin);
     
 private: 
     int bl_x;   // buttom left X
