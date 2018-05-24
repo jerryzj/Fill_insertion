@@ -7,15 +7,19 @@
 
 using namespace std;
 
-class Layout{
-public:
-    //enum NetType {Normal, Fill, Bound, NA};
-    struct rectangle{
+// create another file UTILITY
+struct rectangle{
         int bl_x;   // buttom left X
         int bl_y;   // buttom left y
         int tr_x;   // top right x
         int tr_y;   // top right y
-    };
+};
+
+// TODO: calculate overlapped area
+// TODO: calculate distance between two rectangles(DRC)
+
+class Layout{
+public:    
     struct net{
         rectangle rect; 
         int net_id;
@@ -24,9 +28,13 @@ public:
     struct bin{
         vector<int>* normal;
         vector<int>* fill;
+        int normal_area;
+        int fill_area;
         bin(){  // structure constructor
             normal = new vector<int>;
             fill = new vector<int>;
+            normal_area = 0;
+            fill_area = 0;
         }
     };
      
