@@ -45,7 +45,7 @@ int main(int argc ,char *argv[]){
     // layout.dump();
     // Temporary set bin size = 5000
     layout.set_bin_size(5000);
-    layout.create3Dmatrix();
-    
+    layout.create3Dbin();
+
     return 0;
 }
