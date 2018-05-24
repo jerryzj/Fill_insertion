@@ -1,4 +1,6 @@
 #include "parser.hpp"
+#include "layout.hpp"
+
 
 int main(int argc ,char *argv[]){
     // Cin/Cout Optimization
@@ -10,29 +12,40 @@ int main(int argc ,char *argv[]){
     // Therefore we can't prompt user to input sth.
     cin.tie(0);
 
-    string filename = argv[1];    
+    string filename = argv[1];   
+    // Parser class 
     readconfig config;  // circuit config file
     readrule rule;      // rule.dat file
-    readlayout layout;
+    Layout layout;
+    // Variables
     size_t pos;         // position of certain char
 
     if(argc != 2){
         cerr<<"Use ./a.out (config relative path)\n";
         return -1;
     }
+    // read config file
     config.read_file((char*)filename.c_str());
-    config.dump();
+    //config.dump();
+    // read rule file
     pos = filename.find_last_of('/');
     filename.replace(pos+1,filename.length()-pos,config.rule);
     // here filename should be ./circuit#/rule.dat
     //cout<<filename;
     // for testing 
     rule.read_file((char*)filename.c_str());
-    rule.dump();
+    //rule.dump();
+    // read layout file
     pos = filename.find_last_of('/');
     filename.replace(pos+1,filename.length()-pos,config.input);
+    // here filename should be ./circuit#/layout*.cut
+    //cout<<filename;
+    // for testing 
     layout.read_file((char*)filename.c_str());
+    // layout.dump();
+    // Temporary set bin size = 5000
+    layout.set_bin_size(5000);
+    layout.create3Dmatrix();
     
-    layout.dump();
     return 0;
 }
