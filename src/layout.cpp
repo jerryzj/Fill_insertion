@@ -1,7 +1,7 @@
 #include "layout.hpp"
 
 Layout::Layout() {
-    net_list.reserve(3E5); 
+    normal_list.reserve(3E5); 
 }
 
 void Layout::read_file(char* filename){
@@ -47,7 +47,7 @@ void Layout::read_file(char* filename){
     net_temp.layer   = 0;
 
     // insert to the head of vecetor
-    net_list.push_back(net_temp);
+    normal_list.push_back(net_temp);
     // read layout line by line
     while(getline(file,temp)){
         sscanf(temp.c_str(),"%d %d %d %d %d %d %d %s",
@@ -62,7 +62,7 @@ void Layout::read_file(char* filename){
         _tr_y -= offset_y;
         net_temp.rect.set_rectangle(_bl_x, _bl_y, _tr_x, _tr_y);
 
-        net_list.push_back(net_temp);
+        normal_list.push_back(net_temp);
     }
     file.close();
 }
@@ -74,8 +74,8 @@ void Layout::set_bin_size(int size){
 void Layout::create3Dbin(){
     // since tr_x or tr_y / bin_size is always integer
     // the range right 
-    int range_x = net_list[0].rect.tr_x / bin_size;
-    int range_y = net_list[0].rect.tr_y / bin_size;
+    int range_x = normal_list[0].rect.tr_x / bin_size;
+    int range_y = normal_list[0].rect.tr_y / bin_size;
     
     grid = new bin**[10];
     for(int i = 1; i <= 9; i++){
@@ -92,12 +92,12 @@ void Layout::bin_mapping(){
     // assigned to grid[0][0]
     int layer = 0;
     Rectangle bin_index; 
-    for(int i = 1; i < (int)net_list.size(); i++){
-        layer = net_list[i].layer;
-        bin_index.bl_x = net_list[i].rect.bl_x / bin_size;
-        bin_index.bl_y = net_list[i].rect.bl_y / bin_size;
-        bin_index.tr_x = (net_list[i].rect.tr_x-1) / bin_size; 
-        bin_index.tr_y = (net_list[i].rect.tr_y-1) / bin_size;
+    for(int i = 1; i < (int)normal_list.size(); i++){
+        layer = normal_list[i].layer;
+        bin_index.bl_x = normal_list[i].rect.bl_x / bin_size;
+        bin_index.bl_y = normal_list[i].rect.bl_y / bin_size;
+        bin_index.tr_x = (normal_list[i].rect.tr_x-1) / bin_size; 
+        bin_index.tr_y = (normal_list[i].rect.tr_y-1) / bin_size;
         for(int j = bin_index.bl_x ; j <= bin_index.tr_x; j++){
             for(int k = bin_index.bl_y; k <= bin_index.tr_y; k++){
                 grid[layer][j][k].normal->push_back(i);
@@ -111,7 +111,7 @@ void Layout::dump(){
     cout<<"     Layout file\n";
     cout<<"----------------------\n";  
 
-    for (auto v: net_list) {
+    for (auto v: normal_list) {
         cout << v.rect.bl_x << " " 
             << v.rect.bl_y << " "
             << v.rect.tr_x << " "
@@ -120,3 +120,17 @@ void Layout::dump(){
             << v.layer << endl; 
     }
 }
+void bin_normal_area(int _l, int _x, int _y)
+{
+    int temp_area;
+    Rectangle bin_rect( _x*bin_size, _y*bin_size,
+                        (_x+1)+bin_size, (_y+1)*bin_size);
+    // calculate normal area
+    
+    temp_area = 0;
+    for (auto i : *(grid[_i][_x][_y].normal)) {
+        temp_area += area_overlap(bin_rect, normal_list[i].rect);
+    }
+
+    grid[_i][_x][_y].normal_area = temp_area;
+} 

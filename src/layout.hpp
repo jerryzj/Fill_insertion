@@ -52,11 +52,16 @@ public:
     // Map raw layout file to 3D bin 
     void bin_mapping();
 
+    // this updates the normal and fill area of grid[_l][_x][_y] 
+    void bin_normal_area(int _l, int _x, int _y); 
+
     // list of nets 
-    // net_list[0] stores "layout boundary"
+    // normal_list[0] stores "layout boundary"
     // both boundary and all nets are normalized by offset
     // offset = buttom-left corner of (original) boundary
-    vector<net> net_list;
+    vector<net> normal_list;
+    vector<net> fill_list;
+
     // 3D bin layer*row*col
     // layer = 9 (L1 to L9), L0 stores nothing 
     bin ***grid;
