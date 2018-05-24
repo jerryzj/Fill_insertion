@@ -5,9 +5,8 @@
 #include <vector>
 #include <string.h>
 #include <algorithm>
+
 using namespace std;
-
-
 
 class Rectangle{
 public:
