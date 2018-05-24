@@ -23,36 +23,44 @@ void Layout::read_file(char* filename){
     pos = temp.find(";");
     temp = temp.substr(0, pos);
 
-    //net_temp.poly_id = 0;
-    sscanf(temp.c_str(),"%d %d %d %d",
-            &net_temp.rect.bl_x, &net_temp.rect.bl_y, 
-            &net_temp.rect.tr_x, &net_temp.rect.tr_y);
+    int _bl_x, _bl_y, _tr_x, _tr_y;
+//    sscanf(temp.c_str(),"%d %d %d %d",
+//           &net_temp.rect.bl_x, &net_temp.rect.bl_y, 
+//            &net_temp.rect.tr_x, &net_temp.rect.tr_y);
+//    net_temp.net_id  = 0;
+//    net_temp.layer   = 0;
+    sscanf(temp.c_str(),"%d %d %d %d", &_bl_x, &_bl_y, &_tr_x, &_tr_y);
+
+    // set offset
+    offset_x = _bl_x;
+    offset_y = _bl_y;
+
+    // normalize boundary position
+    _bl_x -= offset_x;
+    _bl_y -= offset_y;
+    _tr_x -= offset_x;
+    _tr_y -= offset_y;
+
+    // set rectangle with normalized boundaries
+    net_temp.rect.set_rectangle(_bl_x, _bl_y, _tr_x, _tr_y);
     net_temp.net_id  = 0;
     net_temp.layer   = 0;
-    
-    // set offset 
-    offset_x = net_temp.rect.bl_x;
-    offset_y = net_temp.rect.bl_y;
-    // normalize boundary position
-    net_temp.rect.bl_x -= offset_x;
-    net_temp.rect.bl_y -= offset_y;
-    net_temp.rect.tr_x -= offset_x;
-    net_temp.rect.tr_y -= offset_y;
+
     // insert to the head of vecetor
     net_list.push_back(net_temp);
     // read layout line by line
     while(getline(file,temp)){
         sscanf(temp.c_str(),"%d %d %d %d %d %d %d %s",
             &poly_id_temp, 
-            &net_temp.rect.bl_x, &net_temp.rect.bl_y,
-            &net_temp.rect.tr_x, &net_temp.rect.tr_y,
+            &_bl_x, &_bl_y, &_tr_x, &_tr_y,
             &net_temp.net_id,    &net_temp.layer,
             c_str );
-        // normalize net position 
-        net_temp.rect.bl_x -= offset_x;
-        net_temp.rect.bl_y -= offset_y;
-        net_temp.rect.tr_x -= offset_x;
-        net_temp.rect.tr_y -= offset_y;
+        // set normalize net position 
+        _bl_x -= offset_x;
+        _bl_y -= offset_y;
+        _tr_x -= offset_x;
+        _tr_y -= offset_y;
+        net_temp.rect.set_rectangle(_bl_x, _bl_y, _tr_x, _tr_y);
 
         net_list.push_back(net_temp);
     }
@@ -64,21 +72,21 @@ void Layout::set_bin_size(int size){
 }
 
 void Layout::create3Dbin(){
-    int x_length = net_list[0].rect.tr_x / bin_size;
-    int y_length = net_list[0].rect.tr_y / bin_size;
+    int range_x = net_list[0].rect.tr_x / bin_size;
+    int range_y = net_list[0].rect.tr_y / bin_size;
     
     grid = new bin**[10];
     for(int i = 1; i <= 9; i++){
-        grid[i] = new bin * [x_length];
-        for(int j = 0; j < x_length; j++){
-            grid[i][j] = new bin[y_length];
+        grid[i] = new bin * [range_x];
+        for(int j = 0; j < range_x; j++){
+            grid[i][j] = new bin[range_y];
         }
     }
 }
 
 void Layout::bin_mapping(){
     int layer = 0;
-    rectangle bin_index; 
+    Rectangle bin_index; 
     for(int i = 1; i < (int)net_list.size(); i++){
         layer = net_list[i].layer;
         bin_index.bl_x = net_list[i].rect.bl_x / bin_size;

@@ -1,0 +1,31 @@
+#ifndef RECTANGLE_HPP
+#define RECTANGLE_HPP
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string.h>
+using namespace std;
+
+
+
+class Rectangle{
+    public:
+    // constructure
+    Rectangle(){}  
+    // constructure with initialize 
+    Rectangle(int _bl_x, int _bl_y, int _tr_x, int _tr_y)
+            {bl_x = _bl_x; bl_y = _bl_y; tr_x = _tr_x; tr_y = _tr_y;}
+    // copy constructure
+    Rectangle(const Rectangle &_r) 
+            {bl_x = _r.bl_x; bl_y = _r.bl_y; tr_x = _r.tr_x; tr_y = _r.tr_y;}
+
+    friend class Layout;   // class Layout can access private member
+    void set_rectangle(int _bl_x, int _bl_y, int _tr_x, int _tr_y);
+ 
+    private: 
+    int bl_x;   // buttom left X
+    int bl_y;   // buttom left y
+    int tr_x;   // top right x
+    int tr_y;   // top right y
+};
+#endif
