@@ -84,7 +84,7 @@ void Layout::create3Dbin(){
 void Layout::bin_mapping(){
     // 5/24 revise bin assignment
     // bl, tr = (0, 5000), (0, 5000) will only be 
-    // assigned to grid[0][0]
+    // assigned to grid[layer][0][0]
     int layer = 0;
     
     Rectangle bin_index; 
