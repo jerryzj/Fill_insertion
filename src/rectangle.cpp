@@ -23,3 +23,19 @@ int area_overlap(const Rectangle &_r1, const Rectangle &_r2){
     
     return area;
 }
+
+bool check_space(const Rectangle &_r1, const Rectangle &_r2, int margin){
+    int area = 0;
+    // Extend _r1 by margin and check the overlapped area
+    // If area is not zero means there exist a rule violation
+    Rectangle temp( _r1.bl_x-margin, _r1.bl_y-margin,
+                    _r1.tr_x+margin, _r1.tr_y+margin);
+    
+    area = area_overlap(temp, _r2);
+    if(area != 0){
+        return false;
+    }
+    else{
+        return true;
+    }
+}
