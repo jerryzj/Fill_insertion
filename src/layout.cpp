@@ -63,7 +63,7 @@ void Layout::set_bin_size(int size){
     bin_size = size;
 }
 
-void Layout::create3Dmatrix(){
+void Layout::create3Dbin(){
     int x_length = net_list[0].rect.tr_x / bin_size;
     int y_length = net_list[0].rect.tr_y / bin_size;
     
@@ -72,6 +72,23 @@ void Layout::create3Dmatrix(){
         grid[i] = new bin * [x_length];
         for(int j = 0; j < x_length; j++){
             grid[i][j] = new bin[y_length];
+        }
+    }
+}
+
+void Layout::bin_mapping(){
+    int layer = 0;
+    rectangle bin_index; 
+    for(int i = 1; i < (int)net_list.size(); i++){
+        layer = net_list[i].layer;
+        bin_index.bl_x = net_list[i].rect.bl_x / bin_size;
+        bin_index.bl_y = net_list[i].rect.bl_y / bin_size;
+        bin_index.tr_x = net_list[i].rect.tr_x / bin_size;
+        bin_index.tr_y = net_list[i].rect.tr_y / bin_size;
+        for(int j = bin_index.bl_x ; j <= bin_index.tr_x; j++){
+            for(int k = bin_index.bl_y; k <= bin_index.tr_y; k++){
+                grid[layer][j][k].normal->push_back(i);
+            }
         }
     }
 }
