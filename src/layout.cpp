@@ -132,5 +132,5 @@ void Layout::bin_normal_area(int _l, int _x, int _y)
         temp_area += area_overlap(bin_rect, normal_list[i].rect);
     }
 
-    grid[_i][_x][_y].normal_area = temp_area;
+    grid[_l][_x][_y].normal_area = temp_area;
 } 
