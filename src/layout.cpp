@@ -16,7 +16,7 @@ void Layout::read_file(char* filename){
 
     if(!file){  // check file exist or not
         cerr<<"Can't open layout file\n";
-        exit(-1);
+        exit(-1);`
     }
     // Poly 0: Read layout boundary
     getline(file,temp);
@@ -131,3 +131,42 @@ void Layout::bin_normal_area(int _l, int _x, int _y)
 
     grid[_l][_x][_y].normal_area = temp_area;
 } 
+
+void Layout::metal_fill()
+{   
+    Rectangle temp; 
+
+    vector<Rectangle> poly_bin_instersect;
+    poly_bin_instersect.reserve(10);
+
+    // deal with layer 1  
+    for(int layer = 1; layer < 2; layer++){
+        for(int i = 0; i < 1; i++){
+            for(int j = 0; j < 1; j++){
+                // poly_bin_interset[0] store bin as rectangle
+                temp.set_rectangle(i*bin_size, j*bin_size, (i+1)*bin_size, (j+1)*bin_size);
+                poly_bin_instersect.push_back(temp);
+                for(auto poly: *(grid[layer][i][j].normal)){
+                    
+                    if(normal_list[poly].rect.bl_x >= poly_bin_instersect[0].bl_x)
+                        temp.bl_x = normal_list[poly].rect.bl_x; 
+                    else temp.bl_x = poly_bin_instersect[0].bl_x;
+
+                    if(normal_list[poly].tr_x >= poly_bin_instersect[0].tr_x)
+                        temp.tr_x = poly_bin_instersect[0].tr_x;
+                    else temp.tr_x = normal_list[poly].rect.tr_x;
+
+                    if(normal_list[poly].rect.bl_y >= poly_bin_instersect[0].bl_y)
+                        temp.bl_y = normal_list[poly].rect.bl_y;
+                    else temp.bl_y = poly_bin_instersect.bl_y;
+
+                    if(normal_list[poly].rect.tr_y >= poly_bin_instersect[0].tr_y)
+                        temp.tr_y = poly_bin_instersect[0].tr_y;
+                    else temp.tr_y = normal_list[poly].rect.tr_y;
+                    poly_bin_instersect.push_back(temp);
+                }
+                
+            }
+        }
+    }
+}
