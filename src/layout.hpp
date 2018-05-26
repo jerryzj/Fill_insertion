@@ -45,6 +45,9 @@ public:
     // this updates the normal and fill area of grid[_l][_x][_y] 
     void bin_normal_area(int _l, int _x, int _y); 
 
+    // 
+    void metal_fill();
+
     // list of nets 
     // normal_list[0] stores "layout boundary"
     // both boundary and all nets are normalized by offset
@@ -62,6 +65,8 @@ public:
     // initial layout boundary offset
     int offset_x; 
     int offset_y;
+
+    
 };
 
 #endif

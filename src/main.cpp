@@ -46,6 +46,7 @@ int main(int argc ,char *argv[]){
     // Temporary set bin size = 5000
     layout.set_bin_size(5000);
     layout.create3Dbin();
+    layout.metal_fill();
 
     return 0;
 }
