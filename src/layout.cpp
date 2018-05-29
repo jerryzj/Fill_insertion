@@ -161,6 +161,7 @@ void Layout::bin_normal_area(int _l, int _x, int _y)
     grid[_l][_x][_y].normal_area = temp_area;
 }
 
+/**** 5/29 Not necessary !!!!! ****/
 void Layout::set_min_density(int layer, double density)
 {
     //cout << "set min density = " << density << endl;
@@ -184,6 +185,7 @@ void Layout::set_min_space(int layer, int space)
     //cout << "set min space = " << space << endl;
     min_space.push_back(space);
 }
+/***********************************/
 
 void Layout::find_fill_region()
 {
@@ -393,8 +395,8 @@ void Layout::metal_fill()
     int range_x = normal_list[0].rect.tr_x / bin_size;
     int range_y = normal_list[0].rect.tr_y / bin_size;
 
-    double poly_density;
-    double curr_density;
+    double poly_density; // normal metal density 
+    double curr_density; // current bin density 
     bool no_more_fill_region;
     int fill_region_used_count;
     int fill_index;
@@ -436,7 +438,8 @@ void Layout::metal_fill()
                 net_temp.layer = layer;
                 net_temp.net_id = 0;
                 fill_area_sum = 0;
-                while (curr_density <= min_density[layer] && (!no_more_fill_region))
+                //while (curr_density <= min_density[layer] && (!no_more_fill_region)) 5/29
+                while (!no_more_fill_region)
                 {
                     fill_bl_x.clear();
                     fill_bl_y.clear();
@@ -494,11 +497,12 @@ void Layout::metal_fill()
                         {
                             for (int b = 0; b < fill_length_ratio; b++)
                             {
-                                net_temp.rect.bl_x = fill_bl_x[a];
-                                net_temp.rect.bl_y = fill_bl_y[b];
-                                net_temp.rect.tr_x = fill_tr_x[a];
-                                net_temp.rect.tr_y = fill_tr_y[b];
+                                /*** 5/29 should use set_rectangle ***/
+                                net_temp.rect.set_rectangle(fill_bl_x[a], fill_bl_y[b], 
+                                                            fill_tr_x[a], fill_tr_y[b]);
                                 fill_list.push_back(net_temp);
+
+                                /*************************************/
 
                                 // dump for debugging
                                 /*
@@ -553,6 +557,12 @@ void Layout::metal_fill()
     cout << "pass = " << (double)(density_pass_count) / double(density_pass_count + density_fail_count) << endl;
 }
 
+/***************************************************************/
+/**** 5/29 window-based check                               ****/
+/**** Re-calculate normal and fill areas in each window     ****/
+/**** need to do verification to check if                   ****/
+/**** window-based areas match the areas found in each bin  ****/ 
+/**** during filling functions                              ****/ 
 void Layout::window_based_density_check()
 {
     cout << "//==== Window based density check ===//" << endl;
@@ -571,7 +581,7 @@ void Layout::window_based_density_check()
     int density_check_pass_count = 0;
     int density_check_larger_than_max_count = 0;
 
-    for (int layer = 1; layer < 10; layer++)
+    for (int layer = 1; layer <= 9; layer++) // 5/29 modified 
     {
         for (int i = 0; i < range_x - 1; i++)
         {
@@ -596,6 +606,7 @@ void Layout::window_based_density_check()
                 window_density = ((double)(metal_area) / (double)(bin_size * bin_size * 4));
                 if (window_density < min_density[layer])
                 {
+                    cout << "fail window_density: " << window_density << endl;
                     density_check_fail_count++;
                 }
                 else
@@ -615,7 +626,9 @@ void Layout::window_based_density_check()
     cout << "pass = " << (double)(density_check_pass_count) / double(density_check_pass_count + density_check_fail_count) << endl;
 }
 
-// check min_width, min_space, max_fill_width
+// check min_width, max_fill_width
+/*** 5/29 should modify to window-based test ***/
+/***********************************************/
 void Layout::DRC_check_width()
 {
     cout << "//=== start DRC check ===//" << endl;
@@ -649,7 +662,12 @@ void Layout::DRC_check_width()
     cout << "max fill width check fail " << max_fill_width_fail_count << endl;
     cout << "----------------------------" << endl;
 }
+/***********************************************/
+/***********************************************/
 
+// check min_space btw fill & normal, fill & fill
+/*** 5/29 should modify to window-based test ***/
+/***********************************************/
 void Layout::DRC_check_space()
 {
     int normal_normal_fail_count = 0;
@@ -665,7 +683,7 @@ void Layout::DRC_check_space()
     //cout << "//=== check space between normal and normal ===//" << endl;
 
     cout << "//=== check space between fill and normal ===//" << endl;
-    for (int layer = 1; layer < 10; layer++)
+    for (int layer = 1; layer <= 9; layer++)  // 5/29 modified 
     {
         //cout << "layer " << layer << endl;
         for (int i = 0; i < range_x; i++)
@@ -741,6 +759,8 @@ void Layout::DRC_check_space()
     cout << "total fill " << fill_list.size() << endl;
     //dump_fill_list();
 }
+/***********************************************/
+/***********************************************/
 
 void Layout::dump_fill_list()
 {
