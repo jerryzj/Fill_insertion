@@ -1,0 +1,17 @@
+{
+    "files.associations": {
+        "iostream": "cpp",
+        "iosfwd": "cpp",
+        "ostream": "cpp",
+        "vector": "cpp",
+        "string_view": "cpp",
+        "*.tcc": "cpp",
+        "array": "cpp",
+        "deque": "cpp",
+        "unordered_map": "cpp",
+        "system_error": "cpp",
+        "initializer_list": "cpp",
+        "utility": "cpp"
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
+}

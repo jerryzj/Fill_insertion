@@ -20,6 +20,7 @@ public:
             {bl_x = _r.bl_x; bl_y = _r.bl_y; tr_x = _r.tr_x; tr_y = _r.tr_y;}
 
     void set_rectangle(int _bl_x, int _bl_y, int _tr_x, int _tr_y);
+    void dump();
     int area();
 
     friend class Layout;   // class Layout can access private member

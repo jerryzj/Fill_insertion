@@ -30,7 +30,10 @@ bool check_space(const Rectangle &_r1, const Rectangle &_r2, int margin){
     // If area is not zero means there exist a rule violation
     Rectangle temp( _r1.bl_x-margin, _r1.bl_y-margin,
                     _r1.tr_x+margin, _r1.tr_y+margin);
-    
+    // check this if we will insert fill at (0,0)
+    //if(temp.bl_x < 0) temp.bl_x = 0;
+    //if(temp.bl_y < 0) temp.bl_y = 0;
+        
     area = area_overlap(temp, _r2);
     if(area != 0){
         return false;
@@ -38,4 +41,13 @@ bool check_space(const Rectangle &_r1, const Rectangle &_r2, int margin){
     else{
         return true;
     }
+}
+
+void Rectangle::dump()
+{
+    cout << "rect " 
+         << bl_x << " "
+         << bl_y << " " 
+         << tr_x << " " 
+         << tr_y << endl;
 }
