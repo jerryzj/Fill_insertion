@@ -60,9 +60,9 @@ int main(int argc ,char *argv[]){
     layout.find_fill_region();
     layout.metal_fill();
     // dump specific in
-    layout.dump_bin(9, 17, 70);
-    //layout.window_based_density_check();
-    //ayout.DRC_check_width();
-    //layout.DRC_check_space();
+    layout.dump_bin(1, 24, 67);
+    layout.window_based_density_check();
+    layout.DRC_check_width();
+    layout.DRC_check_space();
     return 0;
 }

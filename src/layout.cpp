@@ -354,7 +354,7 @@ void Layout::find_fill_region()
                         // for intersection points, filter out normal poly
                         for (auto v : poly_bin_instersect)
                         {
-                            if ((intersect_x[in_x] >= v.bl_x && intersect_x[in_x] <= v.tr_x) ||
+                            if ((intersect_x[in_x] >= v.bl_x && intersect_x[in_x] <= v.tr_x) &&
                                 (intersect_x[in_x + 1] >= v.bl_x && intersect_x[in_x + 1] <= v.tr_x))
                             {
                                 // intersection point = normal bl and tr
@@ -560,12 +560,13 @@ void Layout::metal_fill()
                 }
                 else
                 {
-                    cout << "Fail: " << layer << " " << i << " " << j << " " << endl;
+                    
                     //cout << "fail ";
                     density_fail_count++;
                     //cout << " total density " << curr_density << " ";
                     if (curr_density == poly_density)
                     {
+                        cout << "Fail: " << layer << " " << i << " " << j << " " << endl;
                         //cout << "no fill, poly density = " << poly_density << endl;
                         no_fill_count++;
                     }
@@ -843,7 +844,7 @@ void Layout::DRC_check_width()
 {
     cout << "//=== start DRC check ===//" << endl;
 
-    bool min_space_pass;
+
     int min_width_fail_count = 0;
     int max_fill_width_fail_count = 0;
     int width_x;
@@ -881,8 +882,6 @@ void Layout::DRC_check_width()
 /***********************************************/
 void Layout::DRC_check_space()
 {
-
-    int normal_normal_fail_count = 0;
     int fill_normal_fail_count = 0;
     int fill_fill_fail_count = 0;
     bool check_space_pass;
