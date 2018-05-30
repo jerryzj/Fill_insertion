@@ -23,8 +23,8 @@ line = line[:pos]
 offset_x, offset_y, width, height = line.split(' ') 
 offset_x = int(offset_x)
 offset_y = int(offset_y)
-width    = int(width) - offset_x
-height   = int(height) - offset_y
+width    = int(width)
+height   = int(height)
 
 if(width > height):
     lims = (0,width)
@@ -38,10 +38,10 @@ for line in iter(file):
     line = line[:pos]
     bl_x, bl_y, tr_x, tr_y, net_num,y = line.split(' ')
     print(bl_x, bl_y, tr_x, tr_y, net_num)
-    bl_x = int(bl_x) - offset_x
-    bl_y = int(bl_y) - offset_y
-    tr_x = int(tr_x) - offset_x - bl_x
-    tr_y = int(tr_y) - offset_y - bl_y
+    bl_x = int(bl_x) 
+    bl_y = int(bl_y) 
+    tr_x = int(tr_x) - bl_x
+    tr_y = int(tr_y) - bl_y
     net_num = int(net_num)
     bl_pt = [bl_x,bl_y]
     ax1 = fig.add_subplot(111, aspect='equal')
@@ -60,8 +60,8 @@ line = line[:pos]
 offset_x, offset_y, width, height = line.split(' ') 
 offset_x = int(offset_x)
 offset_y = int(offset_y)
-width    = int(width) - offset_x
-height   = int(height) - offset_y
+width    = int(width) 
+height   = int(height) 
 
 
 for line in iter(file):
@@ -69,20 +69,19 @@ for line in iter(file):
     line = line[:pos]
     bl_x, bl_y, tr_x, tr_y, net_num,y = line.split(' ')
     print(bl_x, bl_y, tr_x, tr_y, net_num)
-    bl_x = int(bl_x) - offset_x
-    bl_y = int(bl_y) - offset_y
-    tr_x = int(tr_x) - offset_x - bl_x
-    tr_y = int(tr_y) - offset_y - bl_y
+    bl_x = int(bl_x) 
+    bl_y = int(bl_y) 
+    tr_x = int(tr_x) - bl_x
+    tr_y = int(tr_y) - bl_y
     net_num = int(net_num)
     bl_pt = [bl_x,bl_y]
     ax1 = fig.add_subplot(111, aspect='equal')
-    
     ax1.add_patch(patches.Rectangle((bl_x,bl_y),tr_x,tr_y, facecolor = "gray"))
     
 file.close()
 
-plt.xlim((0,width))
-plt.ylim((0,height))
+plt.xlim((offset_x,width))
+plt.ylim((offset_y,height))
 plt.xlabel('X')
 plt.ylabel('Y')
 
