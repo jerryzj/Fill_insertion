@@ -787,10 +787,7 @@ void Layout::dump_bin(int layer, int x, int y){
     int upper_bound_x = (x + 1) * bin_size;
     int upper_bound_y = (y + 1) * bin_size;
     
-    string filename("bin_"
-                    +to_string(layer)+"_"
-                    +to_string(x)+"_"
-                    +to_string(y)+"_normal.cut");
+    string filename("normal.cut");
     normal_file.open(filename.c_str(),ios::out);
     if(!normal_file){
         cerr<<"Error create bin_normal file\n";
@@ -845,10 +842,7 @@ void Layout::dump_bin(int layer, int x, int y){
     }
     normal_file.close();
 
-    filename.assign("bin_"
-                    +to_string(layer)+"_"
-                    +to_string(x)+"_"
-                    +to_string(y)+"_fill.cut");
+    filename.assign("fill.cut");
     fill_file.open(filename.c_str(),ios::out);
     if(!fill_file){
         cerr<<"Error create bin_fill file\n";
