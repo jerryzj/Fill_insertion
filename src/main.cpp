@@ -59,8 +59,10 @@ int main(int argc ,char *argv[]){
     cout << endl;
     layout.find_fill_region();
     layout.metal_fill();
-    layout.window_based_density_check();
-    layout.DRC_check_width();
-    layout.DRC_check_space();
+    // dump specific in
+    layout.dump_bin(1,77,25);
+    //layout.window_based_density_check();
+    //ayout.DRC_check_width();
+    //layout.DRC_check_space();
     return 0;
 }
