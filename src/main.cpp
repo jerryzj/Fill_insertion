@@ -59,6 +59,8 @@ int main(int argc ,char *argv[]){
     cout << endl;
     layout.find_fill_region();
     layout.metal_fill();
+    // dump specific bin
+    //layout.dump_bin(2,50,50);
     layout.window_based_density_check();
     layout.DRC_check_width();
     layout.DRC_check_space();
