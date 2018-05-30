@@ -1042,3 +1042,111 @@ void Layout::dump_fill_list()
              << v.layer << endl;
     }
 }
+
+// dump bin into two files
+// Inputs: layer index, and bin index x and y
+void Layout::dump_bin(int layer, int x, int y){
+    fstream density_file;    
+    fstream normal_file;
+    fstream fill_file;
+    string temp;
+    int lower_bound_x = x * bin_size;
+    int lower_bound_y = y * bin_size;
+    int upper_bound_x = (x + 1) * bin_size;
+    int upper_bound_y = (y + 1) * bin_size;
+    
+    double density = ((double) grid[layer][x][y].normal_area + 
+                        (double) grid[layer][x][y].fill_area) / (bin_size*bin_size);
+
+    string filename("density.txt");
+    density_file.open(filename.c_str(),ios::out);
+    if(!density_file){
+        cerr<<"Error create density file\n";
+        exit(-1);
+    }    
+    temp.assign(to_string(density)+"\n");
+    density_file.write(temp.c_str(),temp.length());
+    density_file.close();
+
+    filename.assign("normal.cut");
+    normal_file.open(filename.c_str(),ios::out);
+    if(!normal_file){
+        cerr<<"Error create bin_normal file\n";
+        exit(-1);
+    }
+    temp.assign(to_string(lower_bound_x)+" "
+               +to_string(lower_bound_y)+" "
+               +to_string(upper_bound_x)+" "
+               +to_string(upper_bound_y)+
+               "; chip boundary\n");
+    
+    // write chip boundary to normal file
+    normal_file.write(temp.c_str(),temp.length());
+    // write normal poly info to normal_file
+    for(auto i : *(grid[layer][x][y].normal)){
+        Rectangle temp = normal_list[i].rect;
+        if(temp.bl_x < lower_bound_x) 
+            temp.bl_x = lower_bound_x;
+        if(temp.bl_x > upper_bound_x){
+            cerr<<"Error! poly bl_x bigger than bin upper bound\n";
+            exit(-1);
+        }
+        if(temp.tr_x > upper_bound_x){
+            temp.tr_x = upper_bound_x;
+        }
+        if(temp.tr_x < lower_bound_x){
+            cerr<<"Error! poly tr_x smaller than bin lower bound\n";
+            exit(-1);
+        }        
+        if(temp.bl_y < lower_bound_y){
+            temp.bl_y = lower_bound_y;
+        }
+        if(temp.bl_y > upper_bound_y){
+            cerr<<"Error! poly bl_y bigger than bin upper bound\n";
+            exit(-1);
+        }
+        if(temp.tr_y > upper_bound_y){
+            temp.tr_y = upper_bound_y;
+        }
+        if(temp.tr_y < lower_bound_y){
+            cerr<<"Error! poly tr_y smaller than bin lower bound\n";
+            exit(-1);
+        }
+        string s(to_string(temp.bl_x) + " " + 
+                 to_string(temp.bl_y) + " " +
+                 to_string(temp.tr_x) + " " +
+                 to_string(temp.tr_y) + " " +
+                 to_string(normal_list[i].net_id) + " " +
+                 "normal\n"
+        );
+        normal_file.write(s.c_str(),s.length());
+    }
+    normal_file.close();
+
+    filename.assign("fill.cut");
+    fill_file.open(filename.c_str(),ios::out);
+    if(!fill_file){
+        cerr<<"Error create bin_fill file\n";
+        exit(-1);
+    }
+    temp.assign(to_string(lower_bound_x)+" "
+               +to_string(lower_bound_y)+" "
+               +to_string(upper_bound_x)+" "
+               +to_string(upper_bound_y)+
+               "; chip boundary\n");
+    
+    // write chip boundary to normal file
+    fill_file.write(temp.c_str(),temp.length());
+    for(auto i : *(grid[layer][x][y].fill)){
+        Rectangle temp = fill_list[i].rect;
+        string s(to_string(temp.bl_x) + " " + 
+                 to_string(temp.bl_y) + " " +
+                 to_string(temp.tr_x) + " " +
+                 to_string(temp.tr_y) + " " +
+                 to_string(fill_list[i].net_id) + " " +
+                 "fill\n"
+        );
+        fill_file.write(s.c_str(),s.length());
+    }
+    fill_file.close();
+}
