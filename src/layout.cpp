@@ -779,6 +779,7 @@ void Layout::dump_fill_list()
 // dump bin into two files
 // Inputs: layer index, and bin index x and y
 void Layout::dump_bin(int layer, int x, int y){
+    fstream density_file;    
     fstream normal_file;
     fstream fill_file;
     string temp;
@@ -787,7 +788,20 @@ void Layout::dump_bin(int layer, int x, int y){
     int upper_bound_x = (x + 1) * bin_size;
     int upper_bound_y = (y + 1) * bin_size;
     
-    string filename("normal.cut");
+    double density = ((double) grid[layer][x][y].normal_area + 
+                        (double) grid[layer][x][y].fill_area) / (bin_size*bin_size);
+
+    string filename("density.txt");
+    density_file.open(filename.c_str(),ios::out);
+    if(!density_file){
+        cerr<<"Error create density file\n";
+        exit(-1);
+    }    
+    temp.assign(to_string(density)+"\n");
+    density_file.write(temp.c_str(),temp.length());
+    density_file.close();
+
+    filename.assign("normal.cut");
     normal_file.open(filename.c_str(),ios::out);
     if(!normal_file){
         cerr<<"Error create bin_normal file\n";
