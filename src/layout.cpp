@@ -442,7 +442,7 @@ void Layout::metal_fill()
     int fill_area_sum;
     int metal_fill_cout = 0;
 
-    for (int layer = 1; layer <= 9; layer++)
+    for (int layer = 1; layer <= 9; layer++) 
     //for (int layer = 2; layer <= 2; layer++)
     {
         for (int i = 0; i < range_x; i++)
@@ -560,7 +560,7 @@ void Layout::metal_fill()
                 }
                 else
                 {
-                    //cout << "num: " << layer << " " << i << " " << j << " ";
+                    cout << "Fail: " << layer << " " << i << " " << j << " " << endl;
                     //cout << "fail ";
                     density_fail_count++;
                     //cout << " total density " << curr_density << " ";
@@ -811,8 +811,9 @@ void Layout::window_based_density_check()
                 window_density = ((double)(metal_area) / (double)(bin_size * bin_size * 4));
                 if (window_density < min_density[layer])
                 {
-                   // cout << "fail window_density: " << window_density << endl;
-                    density_check_fail_count++;
+                    //cout << "fail window_density: " << layer 
+                    //     << "_" << i << "_" << j << window_density << endl;
+                    density_check_fail_count++; 
                 }
                 else
                 {
@@ -887,7 +888,6 @@ void Layout::DRC_check_space()
     bool check_space_pass;
     int range_x = normal_list[0].rect.tr_x / bin_size;
     int range_y = normal_list[0].rect.tr_y / bin_size;
-    int test_x_size, test_y_size;
     int a, b; // loop index
 
     // 5/30 modify
@@ -1003,7 +1003,7 @@ void Layout::DRC_check_space()
                 for (int fill_x = 0; fill_x < fill_idx.size(); fill_x++)
                 {
                     a = fill_idx[fill_x];
-                    for (int fill_y = fill_x + 1; fill_y < test_y_size; fill_y++)
+                    for (int fill_y = fill_x + 1; fill_y < fill_idx.size(); fill_y++)
                     {
                         b = fill_idx[fill_y];
                         //cout << "min space = " << min_space[layer] << endl;
