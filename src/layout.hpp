@@ -69,8 +69,8 @@ public:
     void DRC_check_space();
 
     void dump_fill_list();
-
-
+    // select a bin and dump it into two files 
+    void dump_bin(int layer, int offset_x, int offset_y);
 
     // list of nets 
     // normal_list[0] stores "layout boundary"
