@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <map>
 #include <string.h>
 
 using namespace std;
@@ -47,6 +48,47 @@ class readrule{
         // variables
         int rule_num;   // number of rules
         vector<rule> rules;
+};
+
+class readprocess{
+    public:
+    readprocess();
+    // read process file
+    void read_file(char* filename);
+    // find area capacitance
+    double find_area(int x, int y);
+    // find lateral capacintance
+    double find_lateral(int x);
+    // find fringe capacintance
+    double find_fringe(int x, int y);
+    
+    private:
+    enum table_type{
+        area, lateral, fringe, NA
+    };
+
+    struct table{
+        string name;
+        table_type type;
+        vector<int> ranges;
+        vector<double> alpha;
+        vector<double> beta;
+    
+        table(){
+            type = NA;
+            ranges.reserve(12);
+            alpha.reserve(11);
+            beta.reserve(11);
+        }
+    };
+
+    int window_size;
+    //table area_table[10][9];
+    //table fringe_table[9][9];
+    map<string, table> area_table;
+    map<string, table> fringe_table;
+    vector<table> lateral_table;
+
 }; 
 
 #endif

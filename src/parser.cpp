@@ -141,3 +141,44 @@ void readrule::dump(){
     }
 }
 
+readprocess::readprocess(){
+    window_size = 0;
+    //area_table.reserve(45);
+    //fringe_table.reserve(20);
+    lateral_table.reserve(9);
+}
+
+void readprocess::read_file(char* filename){
+    ifstream file(filename);
+    string temp;
+    size_t pos;
+
+    // lateral table only has 9 
+    // fringe has 9*9 - 9 = 72
+    if(!file){  // check file exist or not
+        cerr<<"Can't open process file\n";
+        exit(-1);
+    }
+    // read first commented line and ignore it
+    getline(file, temp);
+    // read window size
+    getline(file, temp);
+    pos = temp.find(' ');
+    temp = temp.substr(++pos);
+    window_size = stoi(temp);
+    cout<<window_size<<endl;
+    // read two commented lines
+    getline(file, temp);
+    getline(file, temp);
+    getline(file, temp);
+    cout<<temp;        
+    //while(getline(file,temp)){
+        /* if(temp[0] == ';'){
+            cout<<"This line should be ignored\n";
+            cout<<"//"<<temp;
+        } */
+      //  temp.append("\n");
+        //cout << temp;
+
+    //}
+}
