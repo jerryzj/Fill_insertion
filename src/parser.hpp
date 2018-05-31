@@ -64,7 +64,7 @@ class readprocess{
     
     private:
     enum table_type{
-        area, lateral, fringe, NA
+        area, lateral, fringe
     };
 
     struct table{
@@ -75,7 +75,6 @@ class readprocess{
         vector<double> beta;
     
         table(){
-            type = NA;
             ranges.reserve(12);
             alpha.reserve(11);
             beta.reserve(11);
@@ -83,11 +82,9 @@ class readprocess{
     };
 
     int window_size;
-    //table area_table[10][9];
-    //table fringe_table[9][9];
-    map<string, table> area_table;
-    map<string, table> fringe_table;
-    vector<table> lateral_table;
+    // generate a string as the key to search cap_table
+    string key_gen(int x,int y, table_type type);
+    map<string, table> cap_table;
 
 }; 
 

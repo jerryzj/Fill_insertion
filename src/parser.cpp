@@ -145,7 +145,54 @@ readprocess::readprocess(){
     window_size = 0;
     //area_table.reserve(45);
     //fringe_table.reserve(20);
-    lateral_table.reserve(9);
+    //lateral_table.reserve(9);
+}
+
+string readprocess::key_gen(int x,int y, table_type type){
+    string lateral_key("*");
+    string area_key("*");
+    string fringe_key("*");
+
+    if(y == 0){
+        cerr<<"The range of the second parameter is 1~9\n";
+        exit(-1);
+    }
+    if(x > 9 || x < 0){
+        cerr<<"Parameter out of range\n";
+        exit(-1);
+    }
+    if(y > 9 || y < 1){
+        cerr<<"Parameter out of range\n";
+        exit(-1);
+    }
+    // handle diagonal lateral cases
+    if (x == y){
+        lateral_key.assign("lateral_table_"+to_string(x));
+    }
+    // handle area and fringe cases
+    else{
+        if(x == 0){
+            area_key.assign("area_table_"+to_string(y)+"_"+to_string(x));
+        }
+        else if(x == 1){
+            area_key.assign("area_table_"+to_string(x)+"_"+to_string(y));
+            fringe_key.assign("fringe_table_"+to_string(x)+"_"+to_string(y));
+            
+        }
+        else if (x > y){
+            area_key.assign("area_table_"+to_string(y)+"_"+to_string(x));
+            fringe_key.assign("fringe_table_"+to_string(x)+"_"+to_string(y));
+        }
+        else{
+            area_key.assign("area_table_"+to_string(x)+"_"+to_string(y));
+            fringe_key.assign("fringe_table_"+to_string(x)+"_"+to_string(y));
+        }
+    }
+    switch(type){
+        case area: return area_key; break;
+        case lateral: return lateral_key; break;
+        case fringe: return fringe_key; break;
+    }
 }
 
 void readprocess::read_file(char* filename){
