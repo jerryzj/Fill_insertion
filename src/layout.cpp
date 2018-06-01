@@ -354,7 +354,7 @@ void Layout::find_fill_region()
                         // for intersection points, filter out normal poly
                         for (auto v : poly_bin_instersect)
                         {
-                            if ((intersect_x[in_x] >= v.bl_x && intersect_x[in_x] <= v.tr_x) ||
+                            if ((intersect_x[in_x] >= v.bl_x && intersect_x[in_x] <= v.tr_x) &&
                                 (intersect_x[in_x + 1] >= v.bl_x && intersect_x[in_x + 1] <= v.tr_x))
                             {
                                 // intersection point = normal bl and tr
