@@ -187,7 +187,7 @@ void Layout::set_min_space(int layer, int space)
 }
 /***********************************/
 
-void Layout::find_fill_region()
+void Layout::find_fill_region_x(int layer, int i, int j)
 {
     Rectangle temp;
     net net_temp;
@@ -201,55 +201,43 @@ void Layout::find_fill_region()
     intersect_x.reserve(10);
     intersect_y.reserve(10);
 
-    int range_x = normal_list[0].rect.tr_x / bin_size;
-    int range_y = normal_list[0].rect.tr_y / bin_size;
-    int init_fill_count = 0;
-
     bool not_poly;
 
-    cout << "//=== Find fill region ===//" << endl;
-    for (int layer = 1; layer <= 9; layer++)
-    //for (int layer = 2; layer <= 2; layer++)
+    vector<Rectangle> no_merge_list;
+
+    poly_bin_instersect.clear();
+    intersect_x.clear();
+    intersect_y.clear();
+    no_merge_list.clear();
+    bin_rect.set_rectangle(i * bin_size, j * bin_size, (i + 1) * bin_size, (j + 1) * bin_size);
+
+    //cout << "***** (" << layer << " " << i << " " << j << " "
+    //     << ")******" << endl;
+
+    //cout << "//=== find intersection of bin and poly ===// " << endl;
+    for (auto poly : *(grid[layer][i][j].normal))
     {
-        for (int i = 0; i < range_x; i++)
-        //for (int i = 50; i < 51; i++)
-        {
-            for (int j = 0; j < range_y; j++)
-            //for (int j = 50; j < 51; j++)
-            {
+        if (normal_list[poly].rect.bl_x >= bin_rect.bl_x)
+            temp.bl_x = normal_list[poly].rect.bl_x;
+        else
+            temp.bl_x = bin_rect.bl_x;
+        if (normal_list[poly].rect.bl_y >= bin_rect.bl_y)
+            temp.bl_y = normal_list[poly].rect.bl_y;
+        else
+            temp.bl_y = bin_rect.bl_y;
+        if (normal_list[poly].rect.tr_x >= bin_rect.tr_x)
+            temp.tr_x = bin_rect.tr_x;
+        else
+            temp.tr_x = normal_list[poly].rect.tr_x;
+        if (normal_list[poly].rect.tr_y >= bin_rect.tr_y)
+            temp.tr_y = bin_rect.tr_y;
+        else
+            temp.tr_y = normal_list[poly].rect.tr_y;
+        poly_bin_instersect.push_back(temp);
+    }
 
-                poly_bin_instersect.clear();
-                intersect_x.clear();
-                intersect_y.clear();
-                bin_rect.set_rectangle(i * bin_size, j * bin_size, (i + 1) * bin_size, (j + 1) * bin_size);
-
-                //cout << "***** (" << layer << " " << i << " " << j << " "
-                //     << ")******" << endl;
-
-                //cout << "//=== find intersection of bin and poly ===// " << endl;
-                for (auto poly : *(grid[layer][i][j].normal))
-                {
-                    if (normal_list[poly].rect.bl_x >= bin_rect.bl_x)
-                        temp.bl_x = normal_list[poly].rect.bl_x;
-                    else
-                        temp.bl_x = bin_rect.bl_x;
-                    if (normal_list[poly].rect.bl_y >= bin_rect.bl_y)
-                        temp.bl_y = normal_list[poly].rect.bl_y;
-                    else
-                        temp.bl_y = bin_rect.bl_y;
-                    if (normal_list[poly].rect.tr_x >= bin_rect.tr_x)
-                        temp.tr_x = bin_rect.tr_x;
-                    else
-                        temp.tr_x = normal_list[poly].rect.tr_x;
-                    if (normal_list[poly].rect.tr_y >= bin_rect.tr_y)
-                        temp.tr_y = bin_rect.tr_y;
-                    else
-                        temp.tr_y = normal_list[poly].rect.tr_y;
-                    poly_bin_instersect.push_back(temp);
-                }
-
-                // dump poly_bin intersect
-                /*
+    // dump poly_bin intersect
+    /*
                 if (layer == 2 && i == 50 && j == 50)
                 {
                     cout << "dump poly_bin intersect" << endl;
@@ -264,76 +252,76 @@ void Layout::find_fill_region()
                 }
                 */
 
-                // store x point in intersect_x
-                for (auto x : poly_bin_instersect)
-                {
-                    intersect_x.push_back(x.bl_x);
-                    intersect_x.push_back(x.tr_x);
-                }
+    // store x point in intersect_x
+    for (auto x : poly_bin_instersect)
+    {
+        intersect_x.push_back(x.bl_x);
+        intersect_x.push_back(x.tr_x);
+    }
 
-                // add bin boundary as intersection point
-                // when no normal in bin
-                if (intersect_x.size() == 0)
-                {
-                    intersect_x.push_back(bin_rect.bl_x);
-                    intersect_x.push_back(bin_rect.tr_x);
-                }
+    // add bin boundary as intersection point
+    // when no normal in bin
+    if (intersect_x.size() == 0)
+    {
+        intersect_x.push_back(bin_rect.bl_x);
+        intersect_x.push_back(bin_rect.tr_x);
+    }
 
-                // add bin boundary as intersection
-                // when normal did not overlap with bin boundary
-                else
-                {
-                    if (intersect_x[0] > bin_rect.bl_x)
-                        intersect_x.insert(intersect_x.begin(), bin_rect.bl_x);
-                    if (intersect_x.back() < bin_rect.tr_x)
-                        intersect_x.push_back(bin_rect.tr_x);
-                }
+    // add bin boundary as intersection
+    // when normal did not overlap with bin boundary
+    else
+    {
+        if (intersect_x[0] > bin_rect.bl_x)
+            intersect_x.insert(intersect_x.begin(), bin_rect.bl_x);
+        if (intersect_x.back() < bin_rect.tr_x)
+            intersect_x.push_back(bin_rect.tr_x);
+    }
 
-                // sort and erase duplicate x
-                sort(intersect_x.begin(), intersect_x.end());
-                intersect_x.erase(unique(intersect_x.begin(), intersect_x.end()), intersect_x.end());
+    // sort and erase duplicate x
+    sort(intersect_x.begin(), intersect_x.end());
+    intersect_x.erase(unique(intersect_x.begin(), intersect_x.end()), intersect_x.end());
 
-                //cout << "//=== Set initialize fill region ===// " << endl;
-                net_temp.net_id = 0;
-                net_temp.layer = layer;
+    //cout << "//=== Set initialize fill region ===// " << endl;
+    net_temp.net_id = 0;
+    net_temp.layer = layer;
 
-                for (int in_x = 0; in_x < intersect_x.size() - 1; in_x++)
-                {
-                    // Given x , find intersection point y
-                    for (auto v : poly_bin_instersect)
-                    {
-                        // find poly intersect with line x = intersect[in_x] and x = intersect[in_x+1]
-                        // add y to intersecty when line x = intersect_x cross normal
-                        if ((intersect_x[in_x] >= v.bl_x && intersect_x[in_x] <= v.tr_x) ||
-                            (intersect_x[in_x + 1] >= v.bl_x && intersect_x[in_x + 1] <= v.tr_x))
-                        {
-                            // store intersection y point
-                            intersect_y.push_back(v.tr_y);
-                            intersect_y.push_back(v.bl_y);
-                        }
-                    }
+    for (int in_x = 0; in_x < intersect_x.size() - 1; in_x++)
+    {
+        // Given x , find intersection point y
+        for (auto v : poly_bin_instersect)
+        {
+            // find poly intersect with line x = intersect[in_x] and x = intersect[in_x+1]
+            // add y to intersecty when line x = intersect_x cross normal
+            if ((intersect_x[in_x] >= v.bl_x && intersect_x[in_x] <= v.tr_x) ||
+                (intersect_x[in_x + 1] >= v.bl_x && intersect_x[in_x + 1] <= v.tr_x))
+            {
+                // store intersection y point
+                intersect_y.push_back(v.tr_y);
+                intersect_y.push_back(v.bl_y);
+            }
+        }
 
-                    // if no poly in this region, set bin as intersection point
-                    if (intersect_y.size() == 0)
-                    {
-                        intersect_y.push_back(bin_rect.tr_y);
-                        intersect_y.push_back(bin_rect.bl_y);
-                    }
-                    // add bin boundary as intersection
-                    // when normal did not overlap with bin boundary
-                    else
-                    {
-                        if (intersect_y[0] > bin_rect.bl_y)
-                            intersect_y.insert(intersect_y.begin(), bin_rect.bl_y);
-                        if (intersect_y.back() < bin_rect.tr_y)
-                            intersect_y.push_back(bin_rect.tr_y);
-                    }
-                    // sort and erase duplicate y
-                    sort(intersect_y.begin(), intersect_y.end());
-                    intersect_y.erase(unique(intersect_y.begin(), intersect_y.end()), intersect_y.end());
+        // if no poly in this region, set bin as intersection point
+        if (intersect_y.size() == 0)
+        {
+            intersect_y.push_back(bin_rect.tr_y);
+            intersect_y.push_back(bin_rect.bl_y);
+        }
+        // add bin boundary as intersection
+        // when normal did not overlap with bin boundary
+        else
+        {
+            if (intersect_y[0] > bin_rect.bl_y)
+                intersect_y.insert(intersect_y.begin(), bin_rect.bl_y);
+            if (intersect_y.back() < bin_rect.tr_y)
+                intersect_y.push_back(bin_rect.tr_y);
+        }
+        // sort and erase duplicate y
+        sort(intersect_y.begin(), intersect_y.end());
+        intersect_y.erase(unique(intersect_y.begin(), intersect_y.end()), intersect_y.end());
 
-                    // dump intersect x y
-                    /*
+        // dump intersect x y
+        /*
                     if (layer == 2 && i == 50 && j == 50)
                     {
                         cout << "intersect x size = " << intersect_x.size()
@@ -348,47 +336,47 @@ void Layout::find_fill_region()
                     }
                     */
 
-                    for (int in_y = 0; in_y < intersect_y.size() - 1; in_y++)
+        for (int in_y = 0; in_y < intersect_y.size() - 1; in_y++)
+        {
+            not_poly = 1;
+            // for intersection points, filter out normal poly
+            for (auto v : poly_bin_instersect)
+            {
+                if ((intersect_x[in_x] >= v.bl_x && intersect_x[in_x] <= v.tr_x) &&
+                    (intersect_x[in_x + 1] >= v.bl_x && intersect_x[in_x + 1] <= v.tr_x))
+                {
+                    // intersection point = normal bl and tr
+                    if ((intersect_y[in_y] == v.bl_y) && (intersect_y[in_y + 1] == v.tr_y))
                     {
-                        not_poly = 1;
-                        // for intersection points, filter out normal poly
-                        for (auto v : poly_bin_instersect)
-                        {
-                            if ((intersect_x[in_x] >= v.bl_x && intersect_x[in_x] <= v.tr_x) &&
-                                (intersect_x[in_x + 1] >= v.bl_x && intersect_x[in_x + 1] <= v.tr_x))
-                            {
-                                // intersection point = normal bl and tr
-                                if ((intersect_y[in_y] == v.bl_y) && (intersect_y[in_y + 1] == v.tr_y))
-                                {
-                                    not_poly = 0;
-                                    //cout << "intersection point = normal bl and tr " << endl;
-                                }
+                        not_poly = 0;
+                        //cout << "intersection point = normal bl and tr " << endl;
+                    }
 
-                                // intersection in normal poly, filter out overlap normal poly
-                                if ((intersect_y[in_y] > v.bl_y) && (intersect_y[in_y] < v.tr_y))
-                                {
-                                    not_poly = 0;
-                                    //cout << " y intersection in normal poly, filter out overlap normal poly" << endl;
-                                }
+                    // intersection in normal poly, filter out overlap normal poly
+                    if ((intersect_y[in_y] > v.bl_y) && (intersect_y[in_y] < v.tr_y))
+                    {
+                        not_poly = 0;
+                        //cout << " y intersection in normal poly, filter out overlap normal poly" << endl;
+                    }
 
-                                // intersection in normal poly, filter out overlap normal poly
-                                if ((intersect_y[in_y + 1] > v.bl_y) && (intersect_y[in_y + 1] < v.tr_y))
-                                {
-                                    not_poly = 0;
-                                    //cout << "y + 1 intersection in normal poly, filter out overlap normal poly" << endl;
-                                }
-                            }
-                        }
+                    // intersection in normal poly, filter out overlap normal poly
+                    if ((intersect_y[in_y + 1] > v.bl_y) && (intersect_y[in_y + 1] < v.tr_y))
+                    {
+                        not_poly = 0;
+                        //cout << "y + 1 intersection in normal poly, filter out overlap normal poly" << endl;
+                    }
+                }
+            }
 
-                        if (not_poly)
-                        {
-                            net_temp.rect.bl_x = intersect_x[in_x];
-                            net_temp.rect.bl_y = intersect_y[in_y];
-                            net_temp.rect.tr_x = intersect_x[in_x + 1];
-                            net_temp.rect.tr_y = intersect_y[in_y + 1];
+            if (not_poly)
+            {
+                temp.bl_x = intersect_x[in_x];
+                temp.bl_y = intersect_y[in_y];
+                temp.tr_x = intersect_x[in_x + 1];
+                temp.tr_y = intersect_y[in_y + 1];
 
-                            // dump for debug
-                            /*
+                // dump for debug
+                /*
                             if (layer == 2 && i == 50 && j == 50)
                             {
                                 //cout << "dump init fill region for debug" << endl;
@@ -396,27 +384,111 @@ void Layout::find_fill_region()
                             }
                             */
 
-                            init_fill_list.push_back(net_temp);
-                            grid[layer][i][j].init_fill->push_back(init_fill_count);
-                            init_fill_count++;
-                        }
-                    }
+                //init_fill_list.push_back(net_temp);
+                no_merge_list.push_back(temp);
+                //grid[layer][i][j].init_fill->push_back(init_fill_count);
+                //init_fill_count++;
+            }
+        }
+        intersect_y.clear();
+    }
 
-                    intersect_y.clear();
+    // merge init_fill_list based on x
+
+    vector<bool> not_merge;
+    // for each retangle in no_merge_list, not_merge = 1
+    for (int c = 0; c < no_merge_list.size(); c++)
+    {
+        not_merge.push_back(1);
+    }
+
+    // Given bl_y and tr_y, store all x with the same bl_y and tr_y
+    // so that we can merge later
+    vector<int> before_merge_x_list;
+    vector<int> after_merge_x_list;
+    vector<Rectangle> merge_x_rect_list;
+    net_temp.net_id = 0;
+    net_temp.layer = layer;
+
+    for (int c = 0; c < no_merge_list.size(); c++)
+    {
+        // if this rectangle did not merge yet
+        before_merge_x_list.clear();
+        after_merge_x_list.clear();
+
+        if (not_merge[c])
+        {
+            // set not_merge[c] = 0
+            not_merge[c] = 0;
+
+            before_merge_x_list.push_back(no_merge_list[c].bl_x);
+            before_merge_x_list.push_back(no_merge_list[c].tr_x);
+
+            // find rectangle with the same bl_y and t_y
+            for (int d = c + 1; d < no_merge_list.size(); d++)
+            {
+                // if no_merge_list[d] and no_merge_list[c] have same bl_y and tr_y
+                if ((no_merge_list[d].bl_y == no_merge_list[c].bl_y) &&
+                    (no_merge_list[d].tr_y == no_merge_list[c].tr_y))
+                {
+                    // set not_merge[d] = 0
+                    not_merge[d] = 0;
+
+                    // add x point into merge_x_list to merge later
+                    before_merge_x_list.push_back(no_merge_list[d].bl_x);
+                    before_merge_x_list.push_back(no_merge_list[d].tr_x);
                 }
+            }
+
+            // for no_merge_list[c], merge with other rect that has same y
+            // merge x point
+            sort(before_merge_x_list.begin(), before_merge_x_list.end());
+
+            for (int d = 0; d < before_merge_x_list.size() - 1;)
+            {
+                //cout << "hihi 1" << endl;
+                // if not duplicate, push into after_merge_x_list
+                if (before_merge_x_list[d] != before_merge_x_list[d + 1])
+                {
+                    after_merge_x_list.push_back(before_merge_x_list[d]);
+                    d++;
+                }
+                // if before_merge_x_list[d] == before_merge_x_list[d+1], skip this two points
+                else
+                {
+                    d += 2;
+                }
+            }
+            // add last element into afte_merge_list
+            after_merge_x_list.push_back(before_merge_x_list.back());
+
+            // push merge rectangle into init_fill_list
+            for (int d = 0; d < after_merge_x_list.size() - 1; d += 2)
+            {              
+                net_temp.rect.bl_x = after_merge_x_list[d];
+                net_temp.rect.tr_x = after_merge_x_list[d + 1];
+                net_temp.rect.bl_y = no_merge_list[c].bl_y;
+                net_temp.rect.tr_y = no_merge_list[c].tr_y;
+                init_fill_list.push_back(net_temp);
+                grid[layer][i][j].init_fill->push_back(init_fill_count);
+                init_fill_count++;
+                
             }
         }
     }
+    poly_bin_instersect.clear();
+    intersect_x.clear();
+    intersect_y.clear();
+    no_merge_list.clear();
+    before_merge_x_list.clear();
+    after_merge_x_list.clear();
 }
 
-void Layout::metal_fill()
+void Layout::metal_fill(int layer, int i, int j)
 {
-    cout << "//=== Start metal Fill ===//" << endl;
 
     Rectangle temp;
     net net_temp;
-    int range_x = normal_list[0].rect.tr_x / bin_size;
-    int range_y = normal_list[0].rect.tr_y / bin_size;
 
     double poly_density; // normal metal density
     double curr_density; // current bin density
@@ -440,148 +512,128 @@ void Layout::metal_fill()
     int density_fail_count = 0;
     int no_fill_count = 0;
     int fill_area_sum;
-    int metal_fill_cout = 0;
 
-    for (int layer = 1; layer <= 9; layer++)
-    //for (int layer = 2; layer <= 2; layer++)
+    int width_left, length_left;
+
+    // Calculate dennsity
+    bin_normal_area(layer, i, j);
+    poly_density = (double)(grid[layer][i][j].normal_area / (double)(bin_size * bin_size));
+
+    //Start fill insertion
+    curr_density = poly_density;
+    fill_region_used_count = 1;
+    no_more_fill_region = (fill_region_used_count > grid[layer][i][j].init_fill->size());
+    net_temp.layer = layer;
+    net_temp.net_id = 0;
+    fill_area_sum = 0;
+    //while (curr_density <= min_density[layer] && (!no_more_fill_region)) 5/29
+    while (!no_more_fill_region)
     {
-        for (int i = 0; i < range_x; i++)
-        //for (int i = 50; i < 51; i++)
+        fill_bl_x.clear();
+        fill_bl_y.clear();
+        fill_tr_x.clear();
+        fill_tr_y.clear();
+        fill_index = grid[layer][i][j].init_fill->at(fill_region_used_count - 1);
+
+        // for init fill region, shrink min_space
+        temp.bl_x = init_fill_list[fill_index].rect.bl_x + min_space[layer];
+        temp.bl_y = init_fill_list[fill_index].rect.bl_y + min_space[layer];
+        temp.tr_x = init_fill_list[fill_index].rect.tr_x - min_space[layer];
+        temp.tr_y = init_fill_list[fill_index].rect.tr_y - min_space[layer];
+        fill_width = temp.tr_x - temp.bl_x;
+        fill_length = temp.tr_y - temp.bl_y;
+        fill_width_ratio = fill_width / max_fill_width[layer];
+        fill_length_ratio = fill_length / max_fill_width[layer];
+
+        //cout << "fill_w " << fill_width << " fill_L = " << fill_length << endl;
+        // if width and length both larger than min_width, start fill
+        if (fill_width >= min_width[layer] && fill_length >= min_width[layer])
         {
-            for (int j = 0; j < range_y; j++)
-            //for (int j = 50; j < 51; j++)
+            // if width ratio > 0, means width > max_width, cut width into 1300-130 = 1170
+            if (fill_width_ratio > 0)
             {
-
-                // Calculate dennsity
-                bin_normal_area(layer, i, j);
-                poly_density = (double)(grid[layer][i][j].normal_area / (double)(bin_size * bin_size));
-
-                //cout << "//=== Start fill insertion ===// " << endl;
-                //Start fill insertion
-                curr_density = poly_density;
-                fill_region_used_count = 1;
-                no_more_fill_region = (fill_region_used_count > grid[layer][i][j].init_fill->size());
-                net_temp.layer = layer;
-                net_temp.net_id = 0;
-                fill_area_sum = 0;
-                //while (curr_density <= min_density[layer] && (!no_more_fill_region)) 5/29
-                while (!no_more_fill_region)
+                for (int a = 0; a < fill_width_ratio; a++)
                 {
-                    fill_bl_x.clear();
-                    fill_bl_y.clear();
-                    fill_tr_x.clear();
-                    fill_tr_y.clear();
-                    fill_index = grid[layer][i][j].init_fill->at(fill_region_used_count - 1);
-
-                    // for init fill region, shrink min_space
-                    temp.bl_x = init_fill_list[fill_index].rect.bl_x + min_space[layer];
-                    temp.bl_y = init_fill_list[fill_index].rect.bl_y + min_space[layer];
-                    temp.tr_x = init_fill_list[fill_index].rect.tr_x - min_space[layer];
-                    temp.tr_y = init_fill_list[fill_index].rect.tr_y - min_space[layer];
-                    fill_width = temp.tr_x - temp.bl_x;
-                    fill_length = temp.tr_y - temp.bl_y;
-                    fill_width_ratio = fill_width / max_fill_width[layer];
-                    fill_length_ratio = fill_length / max_fill_width[layer];
-
-                    //cout << "fill_w " << fill_width << " fill_L = " << fill_length << endl;
-                    // if width and length both larger than min_width, start fill
-                    if (fill_width >= min_width[layer] && fill_length >= min_width[layer])
-                    {
-                        // if width ratio > 0, means width > max_width, cut width into 1300-130 = 1170
-                        if (fill_width_ratio > 0)
-                        {
-                            for (int a = 0; a < fill_width_ratio; a++)
-                            {
-                                fill_bl_x.push_back(temp.bl_x + (a * max_fill_width[layer]));
-                                fill_tr_x.push_back(temp.bl_x + (a * max_fill_width[layer]) + max_fill_width[layer] - min_space[layer]);
-                            }
-                        }
-                        else
-                        {
-                            fill_bl_x.push_back(temp.bl_x);
-                            fill_tr_x.push_back(temp.tr_x);
-                            fill_width_ratio = 1; // for loop used
-                        }
-                        // if length ratio > 0, means length > max_width, cut length into 1300-130 = 1170
-                        if (fill_length_ratio > 0)
-                        {
-                            for (int a = 0; a < fill_length_ratio; a++)
-                            {
-                                fill_bl_y.push_back(temp.bl_y + (a * max_fill_width[layer]));
-                                fill_tr_y.push_back(temp.bl_y + (a * max_fill_width[layer]) + max_fill_width[layer] - min_space[layer]);
-                            }
-                        }
-                        else
-                        {
-                            fill_bl_y.push_back(temp.bl_y);
-                            fill_tr_y.push_back(temp.tr_y);
-                            fill_length_ratio = 1; // for loop used
-                        }
-
-                        //push fill to fill_list and update density
-                        for (int a = 0; a < fill_width_ratio; a++)
-                        {
-                            for (int b = 0; b < fill_length_ratio; b++)
-                            {
-                                /*** 5/29 should use set_rectangle ***/
-                                net_temp.rect.set_rectangle(fill_bl_x[a], fill_bl_y[b],
-                                                            fill_tr_x[a], fill_tr_y[b]);
-                                fill_list.push_back(net_temp);
-
-                                /*************************************/
-
-                                // dump for debugging
-                                /*
-                                if (layer == 2 && i == 50 && j == 50)
-                                {
-                                    //cout << "dump fill region for debug" << endl;
-                                    net_temp.rect.dump();
-                                }
-                                */
-
-                                area_temp = net_temp.rect.area();
-                                fill_area_sum += area_temp;
-                                grid[layer][i][j].fill->push_back(metal_fill_cout);
-                                metal_fill_cout++;
-                            }
-                        }
-                    }
-                    fill_region_used_count++;
-                    no_more_fill_region = (fill_region_used_count > grid[layer][i][j].init_fill->size());
+                    fill_bl_x.push_back(temp.bl_x + (a * max_fill_width[layer]));
+                    fill_tr_x.push_back(temp.bl_x + (a * max_fill_width[layer]) + max_fill_width[layer] - min_space[layer]);
                 }
 
-                curr_density += ((double)fill_area_sum / (double)(bin_size * bin_size));
-                grid[layer][i][j].fill_area = fill_area_sum;
-                // run time density check
-
-                if (curr_density >= min_density[layer])
+                width_left = temp.tr_x - (temp.bl_x + (fill_width_ratio * max_fill_width[layer]));
+                if (width_left > min_width[layer])
                 {
-                    density_pass_count++;
+                    fill_bl_x.push_back(temp.bl_x + (fill_width_ratio * max_fill_width[layer]));
+                    fill_tr_x.push_back(temp.tr_x);
+                    fill_width_ratio++; // use as loop index later
                 }
-                else
+            }
+            else
+            {
+                fill_bl_x.push_back(temp.bl_x);
+                fill_tr_x.push_back(temp.tr_x);
+                fill_width_ratio = 1; // for loop used
+            }
+
+            // if length ratio > 0, means length > max_width, cut length into 1300-130 = 1170
+            if (fill_length_ratio > 0)
+            {
+                for (int a = 0; a < fill_length_ratio; a++)
                 {
-                    //cout << "num: " << layer << " " << i << " " << j << " ";
-                    //cout << "fail ";
-                    density_fail_count++;
-                    //cout << " total density " << curr_density << " ";
-                    if (curr_density == poly_density)
-                    {
-                        //cout << "no fill, poly density = " << poly_density << endl;
-                        no_fill_count++;
-                    }
-                    else
-                    {
-                        //cout << endl;
-                    }
+                    fill_bl_y.push_back(temp.bl_y + (a * max_fill_width[layer]));
+                    fill_tr_y.push_back(temp.bl_y + (a * max_fill_width[layer]) + max_fill_width[layer] - min_space[layer]);
+                }
+                length_left = temp.tr_y - (temp.bl_y + (fill_length_ratio * max_fill_width[layer]));
+                if (length_left > min_width[layer])
+                {
+                    fill_bl_y.push_back(temp.bl_y + (fill_length_ratio * max_fill_width[layer]));
+                    fill_tr_y.push_back(temp.tr_y);
+                    fill_length_ratio++; // use as loop index later
+                }
+            }
+            else
+            {
+                fill_bl_y.push_back(temp.bl_y);
+                fill_tr_y.push_back(temp.tr_y);
+                fill_length_ratio = 1; // for loop used
+            }
+
+            //push fill to fill_list and update density
+            for (int a = 0; a < fill_width_ratio; a++)
+            {
+                for (int b = 0; b < fill_length_ratio; b++)
+                {
+                    net_temp.rect.set_rectangle(fill_bl_x[a], fill_bl_y[b],
+                                                fill_tr_x[a], fill_tr_y[b]);
+                    fill_list.push_back(net_temp);
+                    area_temp = net_temp.rect.area();
+                    fill_area_sum += area_temp;
+                    grid[layer][i][j].fill->push_back(metal_fill_count);
+                    metal_fill_count++;
                 }
             }
         }
+        fill_region_used_count++;
+        no_more_fill_region = (fill_region_used_count > grid[layer][i][j].init_fill->size());
     }
-    cout << "bin density check: " << endl;
-    cout << "density pass count " << density_pass_count << endl;
-    cout << "density fail count " << density_fail_count << endl;
-    cout << "no fill count " << no_fill_count << endl;
-    cout << "pass = " << (double)(density_pass_count) / double(density_pass_count + density_fail_count) << endl;
+
+    curr_density += ((double)fill_area_sum / (double)(bin_size * bin_size));
+    grid[layer][i][j].fill_area = fill_area_sum;
+    // run time density check
+
+    if (curr_density < min_density[layer])
+    {
+        //cout << "fail ";
+        //cout << "Fail: " << layer << " " << i << " " << j << " " << endl;
+        //cout << " total density " << curr_density << " " << endl;
+        if (curr_density == poly_density)
+        {
+            //cout << "Fail: " << layer << " " << i << " " << j << " " << endl;
+            //cout << "no fill, poly density = " << poly_density << endl;
+        }
+        else
+        {
+            //cout << endl;
+        }
+    }
 }
 
 /***************************************************************/
@@ -802,8 +854,8 @@ void Layout::window_based_density_check()
                 else
                 {
                     //cout << "fill area verification fail" << endl;
-                    cout << "fill area fail " << layer << " " << i << " " << j << endl;
-                    cout << "window area = " << fill_area_window << "bin area = " << fill_area_bin;
+                    //cout << "fill area fail " << layer << " " << i << " " << j << endl;
+                    //cout << "window area = " << fill_area_window << "bin area = " << fill_area_bin;
                     fill_area_ver_fail_count++;
                 }
                 // Check whether window density > min density and window density > max density
@@ -811,7 +863,8 @@ void Layout::window_based_density_check()
                 window_density = ((double)(metal_area) / (double)(bin_size * bin_size * 4));
                 if (window_density < min_density[layer])
                 {
-                   // cout << "fail window_density: " << window_density << endl;
+                    cout << "fail window_density: " << layer
+                         << "_" << i << "_" << j << " " << window_density << endl;
                     density_check_fail_count++;
                 }
                 else
@@ -822,7 +875,6 @@ void Layout::window_based_density_check()
                         density_check_larger_than_max_count++;
                     }
                 }
-                
             }
         }
     }
@@ -842,7 +894,6 @@ void Layout::DRC_check_width()
 {
     cout << "//=== start DRC check ===//" << endl;
 
-    bool min_space_pass;
     int min_width_fail_count = 0;
     int max_fill_width_fail_count = 0;
     int width_x;
@@ -863,6 +914,9 @@ void Layout::DRC_check_width()
 
         if (width_x > max_fill_width[layer] || length_y > max_fill_width[layer])
         {
+            //cout << "width = " << width_x << " ";
+            //cout << "length = " << length_y << endl;
+            //cout << "max = " << max_fill_width[layer] << endl;
             max_fill_width_fail_count++;
         }
     }
@@ -880,14 +934,11 @@ void Layout::DRC_check_width()
 /***********************************************/
 void Layout::DRC_check_space()
 {
-
-    int normal_normal_fail_count = 0;
     int fill_normal_fail_count = 0;
     int fill_fill_fail_count = 0;
     bool check_space_pass;
     int range_x = normal_list[0].rect.tr_x / bin_size;
     int range_y = normal_list[0].rect.tr_y / bin_size;
-    int test_x_size, test_y_size;
     int a, b; // loop index
 
     // 5/30 modify
@@ -1003,7 +1054,7 @@ void Layout::DRC_check_space()
                 for (int fill_x = 0; fill_x < fill_idx.size(); fill_x++)
                 {
                     a = fill_idx[fill_x];
-                    for (int fill_y = fill_x + 1; fill_y < test_y_size; fill_y++)
+                    for (int fill_y = fill_x + 1; fill_y < fill_idx.size(); fill_y++)
                     {
                         b = fill_idx[fill_y];
                         //cout << "min space = " << min_space[layer] << endl;
@@ -1045,8 +1096,9 @@ void Layout::dump_fill_list()
 
 // dump bin into two files
 // Inputs: layer index, and bin index x and y
-void Layout::dump_bin(int layer, int x, int y){
-    fstream density_file;    
+void Layout::dump_bin(int layer, int x, int y)
+{
+    fstream density_file;
     fstream normal_file;
     fstream fill_file;
     string temp;
@@ -1054,99 +1106,536 @@ void Layout::dump_bin(int layer, int x, int y){
     int lower_bound_y = y * bin_size;
     int upper_bound_x = (x + 1) * bin_size;
     int upper_bound_y = (y + 1) * bin_size;
-    
-    double density = ((double) grid[layer][x][y].normal_area + 
-                        (double) grid[layer][x][y].fill_area) / (bin_size*bin_size);
+
+    double density = ((double)grid[layer][x][y].normal_area +
+                      (double)grid[layer][x][y].fill_area) /
+                     (bin_size * bin_size);
 
     string filename("density.txt");
-    density_file.open(filename.c_str(),ios::out);
-    if(!density_file){
-        cerr<<"Error create density file\n";
+    density_file.open(filename.c_str(), ios::out);
+    if (!density_file)
+    {
+        cerr << "Error create density file\n";
         exit(-1);
-    }    
-    temp.assign(to_string(density)+"\n");
-    density_file.write(temp.c_str(),temp.length());
+    }
+    temp.assign(to_string(density) + "\n");
+    density_file.write(temp.c_str(), temp.length());
     density_file.close();
 
     filename.assign("normal.cut");
-    normal_file.open(filename.c_str(),ios::out);
-    if(!normal_file){
-        cerr<<"Error create bin_normal file\n";
+    normal_file.open(filename.c_str(), ios::out);
+    if (!normal_file)
+    {
+        cerr << "Error create bin_normal file\n";
         exit(-1);
     }
-    temp.assign(to_string(lower_bound_x)+" "
-               +to_string(lower_bound_y)+" "
-               +to_string(upper_bound_x)+" "
-               +to_string(upper_bound_y)+
-               "; chip boundary\n");
-    
+    temp.assign(to_string(lower_bound_x) + " " + to_string(lower_bound_y) + " " + to_string(upper_bound_x) + " " + to_string(upper_bound_y) +
+                "; chip boundary\n");
+
     // write chip boundary to normal file
-    normal_file.write(temp.c_str(),temp.length());
+    normal_file.write(temp.c_str(), temp.length());
     // write normal poly info to normal_file
-    for(auto i : *(grid[layer][x][y].normal)){
+    for (auto i : *(grid[layer][x][y].normal))
+    {
         Rectangle temp = normal_list[i].rect;
-        if(temp.bl_x < lower_bound_x) 
+        if (temp.bl_x < lower_bound_x)
             temp.bl_x = lower_bound_x;
-        if(temp.bl_x > upper_bound_x){
-            cerr<<"Error! poly bl_x bigger than bin upper bound\n";
+        if (temp.bl_x > upper_bound_x)
+        {
+            cerr << "Error! poly bl_x bigger than bin upper bound\n";
             exit(-1);
         }
-        if(temp.tr_x > upper_bound_x){
+        if (temp.tr_x > upper_bound_x)
+        {
             temp.tr_x = upper_bound_x;
         }
-        if(temp.tr_x < lower_bound_x){
-            cerr<<"Error! poly tr_x smaller than bin lower bound\n";
+        if (temp.tr_x < lower_bound_x)
+        {
+            cerr << "Error! poly tr_x smaller than bin lower bound\n";
             exit(-1);
-        }        
-        if(temp.bl_y < lower_bound_y){
+        }
+        if (temp.bl_y < lower_bound_y)
+        {
             temp.bl_y = lower_bound_y;
         }
-        if(temp.bl_y > upper_bound_y){
-            cerr<<"Error! poly bl_y bigger than bin upper bound\n";
+        if (temp.bl_y > upper_bound_y)
+        {
+            cerr << "Error! poly bl_y bigger than bin upper bound\n";
             exit(-1);
         }
-        if(temp.tr_y > upper_bound_y){
+        if (temp.tr_y > upper_bound_y)
+        {
             temp.tr_y = upper_bound_y;
         }
-        if(temp.tr_y < lower_bound_y){
-            cerr<<"Error! poly tr_y smaller than bin lower bound\n";
+        if (temp.tr_y < lower_bound_y)
+        {
+            cerr << "Error! poly tr_y smaller than bin lower bound\n";
             exit(-1);
         }
-        string s(to_string(temp.bl_x) + " " + 
+        string s(to_string(temp.bl_x) + " " +
                  to_string(temp.bl_y) + " " +
                  to_string(temp.tr_x) + " " +
                  to_string(temp.tr_y) + " " +
                  to_string(normal_list[i].net_id) + " " +
-                 "normal\n"
-        );
-        normal_file.write(s.c_str(),s.length());
+                 "normal\n");
+        normal_file.write(s.c_str(), s.length());
     }
     normal_file.close();
 
     filename.assign("fill.cut");
-    fill_file.open(filename.c_str(),ios::out);
-    if(!fill_file){
-        cerr<<"Error create bin_fill file\n";
+    fill_file.open(filename.c_str(), ios::out);
+    if (!fill_file)
+    {
+        cerr << "Error create bin_fill file\n";
         exit(-1);
     }
-    temp.assign(to_string(lower_bound_x)+" "
-               +to_string(lower_bound_y)+" "
-               +to_string(upper_bound_x)+" "
-               +to_string(upper_bound_y)+
-               "; chip boundary\n");
-    
+    temp.assign(to_string(lower_bound_x) + " " + to_string(lower_bound_y) + " " + to_string(upper_bound_x) + " " + to_string(upper_bound_y) +
+                "; chip boundary\n");
+
     // write chip boundary to normal file
-    fill_file.write(temp.c_str(),temp.length());
-    for(auto i : *(grid[layer][x][y].fill)){
+    fill_file.write(temp.c_str(), temp.length());
+    for (auto i : *(grid[layer][x][y].fill))
+    {
         Rectangle temp = fill_list[i].rect;
-        string s(to_string(temp.bl_x) + " " + 
+        string s(to_string(temp.bl_x) + " " +
                  to_string(temp.bl_y) + " " +
                  to_string(temp.tr_x) + " " +
                  to_string(temp.tr_y) + " " +
                  to_string(fill_list[i].net_id) + " " +
-                 "fill\n"
-        );
-        fill_file.write(s.c_str(),s.length());
+                 "fill\n");
+        fill_file.write(s.c_str(), s.length());
     }
     fill_file.close();
+}
+
+// 6/01 working list
+// modify find_fill_region() into find_fill_region_x() and test
+// modify metal_fill() into metal_fill_x and test()
+// add find_fill_region_x() and metal_fill_y()
+// add random_fill()
+// add merge function in find_init_fill_x() and find_init_fill_y()
+
+void Layout::fill_insertion()
+{
+    int range_x = normal_list[0].rect.tr_x / bin_size;
+    int range_y = normal_list[0].rect.tr_y / bin_size;
+
+    // for each bin
+    for (int layer = 1; layer <= 9; layer++) // 5/29 modified
+    {
+        //cout << "layer " << layer << endl;
+        for (int i = 0; i < range_x; i++)
+        {
+            for (int j = 0; j < range_y; j++)
+            {
+                // if layer = 1,3,5,7,9 insert fill by x (vertical)
+                if (layer % 2 == 1)
+                {
+                    find_fill_region_x(layer, i, j);
+                }
+                // else, layer = 2,4,6,8 insert fill by y (horizontal)
+                else
+                {
+                    find_fill_region_y(layer, i, j);
+                }
+                metal_fill(layer, i, j);
+                // 3,3 is minimum requirement for not violate DRC
+                random_fill(layer, i, j, 3, 3);
+                if (layer == 9 && (i == 8 || i == 9) && (j == 102 || j == 103 || j == 104 || j == 105))
+                {
+                    cout << layer << " " << i << " " << j << " random count: " << random_fill_count << endl;
+                }
+
+                // add random fill to improve density for all pin
+            }
+        }
+    }
+}
+
+void Layout::find_fill_region_y(int layer, int i, int j)
+{
+    Rectangle temp;
+    net net_temp;
+    Rectangle bin_rect;
+
+    vector<Rectangle> poly_bin_instersect;
+    poly_bin_instersect.reserve(10);
+
+    vector<int> intersect_x;
+    vector<int> intersect_y;
+    intersect_x.reserve(10);
+    intersect_y.reserve(10);
+
+    bool not_poly;
+
+    vector<Rectangle> no_merge_list;
+
+    poly_bin_instersect.clear();
+    intersect_x.clear();
+    intersect_y.clear();
+    no_merge_list.clear();
+
+    bin_rect.set_rectangle(i * bin_size, j * bin_size, (i + 1) * bin_size, (j + 1) * bin_size);
+
+    for (auto poly : *(grid[layer][i][j].normal))
+    {
+        if (normal_list[poly].rect.bl_x >= bin_rect.bl_x)
+            temp.bl_x = normal_list[poly].rect.bl_x;
+        else
+            temp.bl_x = bin_rect.bl_x;
+        if (normal_list[poly].rect.bl_y >= bin_rect.bl_y)
+            temp.bl_y = normal_list[poly].rect.bl_y;
+        else
+            temp.bl_y = bin_rect.bl_y;
+        if (normal_list[poly].rect.tr_x >= bin_rect.tr_x)
+            temp.tr_x = bin_rect.tr_x;
+        else
+            temp.tr_x = normal_list[poly].rect.tr_x;
+        if (normal_list[poly].rect.tr_y >= bin_rect.tr_y)
+            temp.tr_y = bin_rect.tr_y;
+        else
+            temp.tr_y = normal_list[poly].rect.tr_y;
+        poly_bin_instersect.push_back(temp);
+    }
+
+    // dump poly_bin intersect
+    /*
+                if (layer == 2 && i == 50 && j == 50)
+                {
+                    cout << "dump poly_bin intersect" << endl;
+                    for (auto v : poly_bin_instersect)
+                    {
+                        cout << v.bl_x << " "
+                             << v.bl_y << " "
+                             << v.tr_x << " "
+                             << v.tr_y << endl;
+                    }
+                    cout << "-----------------------" << endl;
+                }
+                */
+
+    // store y point in intersect_y
+    for (auto y : poly_bin_instersect)
+    {
+        intersect_y.push_back(y.bl_y);
+        intersect_y.push_back(y.tr_y);
+    }
+
+    // add bin boundary as intersection point
+    // when no normal in bin
+    if (intersect_y.size() == 0)
+    {
+        intersect_y.push_back(bin_rect.bl_y);
+        intersect_y.push_back(bin_rect.tr_y);
+    }
+
+    // add bin boundary as intersection
+    // when normal did not overlap with bin boundary
+    else
+    {
+        if (intersect_y[0] > bin_rect.bl_y)
+            intersect_y.insert(intersect_y.begin(), bin_rect.bl_y);
+        if (intersect_y.back() < bin_rect.tr_y)
+            intersect_y.push_back(bin_rect.tr_y);
+    }
+
+    // sort and erase duplicate y
+    sort(intersect_y.begin(), intersect_y.end());
+    intersect_y.erase(unique(intersect_y.begin(), intersect_y.end()), intersect_y.end());
+
+    //cout << "//=== Set initialize fill region ===// " << endl;
+    net_temp.net_id = 0;
+    net_temp.layer = layer;
+
+    for (int in_y = 0; in_y < intersect_y.size() - 1; in_y++)
+    {
+        // Given y , find intersection point x
+        for (auto v : poly_bin_instersect)
+        {
+            // find poly intersect with line y = intersect[in_y] and y = intersect[in_y+1]
+            // add x to intersecty when line y = intersect_y cross normal
+            if ((intersect_y[in_y] >= v.bl_y && intersect_y[in_y] <= v.tr_y) ||
+                (intersect_y[in_y + 1] >= v.bl_y && intersect_y[in_y + 1] <= v.tr_y))
+            {
+                // store intersection y point
+                intersect_x.push_back(v.tr_x);
+                intersect_x.push_back(v.bl_x);
+            }
+        }
+
+        // if no poly in this region, set bin as intersection point
+        if (intersect_x.size() == 0)
+        {
+            intersect_x.push_back(bin_rect.tr_x);
+            intersect_x.push_back(bin_rect.bl_x);
+        }
+        // add bin boundary as intersection
+        // when normal did not overlap with bin boundary
+        else
+        {
+            if (intersect_x[0] > bin_rect.bl_x)
+                intersect_x.insert(intersect_x.begin(), bin_rect.bl_x);
+            if (intersect_x.back() < bin_rect.tr_x)
+                intersect_x.push_back(bin_rect.tr_x);
+        }
+        // sort and erase duplicate x
+        sort(intersect_x.begin(), intersect_x.end());
+        intersect_x.erase(unique(intersect_x.begin(), intersect_x.end()), intersect_x.end());
+
+        // dump intersect x y
+        /*
+                    if (layer == 2 && i == 50 && j == 50)
+                    {
+                        cout << "intersect x size = " << intersect_x.size()
+                             << " intersect y size = " << intersect_y.size() << endl;
+                        cout << "intersect x = " << intersect_x[in_x] << " " << intersect_x[in_x + 1] << endl;
+                        cout << "intersect y = ";
+                        for (auto v : intersect_y)
+                        {
+                            cout << v << " ";
+                        }
+                        cout << endl;
+                    }
+                    */
+
+        for (int in_x = 0; in_x < intersect_x.size() - 1; in_x++)
+        {
+            not_poly = 1;
+            // for intersection points, filter out normal poly
+            for (auto v : poly_bin_instersect)
+            {
+                if ((intersect_y[in_y] >= v.bl_y && intersect_y[in_y] <= v.tr_y) &&
+                    (intersect_y[in_y + 1] >= v.bl_y && intersect_y[in_y + 1] <= v.tr_y))
+                {
+                    // intersection point = normal bl and tr
+                    if ((intersect_x[in_x] == v.bl_x) && (intersect_x[in_x + 1] == v.tr_x))
+                    {
+                        not_poly = 0;
+                        //cout << "intersection point = normal bl and tr " << endl;
+                    }
+
+                    // intersection in normal poly, filter out overlap normal poly
+                    if ((intersect_x[in_x] > v.bl_x) && (intersect_x[in_x] < v.tr_x))
+                    {
+                        not_poly = 0;
+                        //cout << " x intersection in normal poly, filter out overlap normal poly" << endl;
+                    }
+
+                    // intersection in normal poly, filter out overlap normal poly
+                    if ((intersect_x[in_x + 1] > v.bl_x) && (intersect_x[in_x + 1] < v.tr_x))
+                    {
+                        not_poly = 0;
+                        //cout << "x + 1 intersection in normal poly, filter out overlap normal poly" << endl;
+                    }
+                }
+            }
+
+            if (not_poly)
+            {
+                temp.bl_x = intersect_x[in_x];
+                temp.bl_y = intersect_y[in_y];
+                temp.tr_x = intersect_x[in_x + 1];
+                temp.tr_y = intersect_y[in_y + 1];
+
+                // dump for debug
+                /*
+                            if (layer == 2 && i == 50 && j == 50)
+                            {
+                                //cout << "dump init fill region for debug" << endl;
+                                net_temp.rect.dump();
+                            }
+                            */
+
+                //init_fill_list.push_back(net_temp);
+                no_merge_list.push_back(temp);
+                //grid[layer][i][j].init_fill->push_back(init_fill_count);
+                //init_fill_count++;
+                //cout << "init _fill count" << init_fill_count << endl;
+            }
+        }
+        intersect_x.clear();
+    }
+
+    // merge y point init_fill_list
+
+    vector<bool> not_merge;
+
+    // for each retangle in no_merge_list, not_merge = 1
+    for (int c = 0; c < no_merge_list.size(); c++)
+    {
+        not_merge.push_back(1);
+    }
+
+    // Given bl_y and tr_y, store all x with the same bl_x and tr_x
+    // so that we can merge later
+    vector<int> before_merge_y_list;
+    vector<int> after_merge_y_list;
+    net_temp.net_id = 0;
+    net_temp.layer = layer;
+
+    for (int c = 0; c < no_merge_list.size(); c++)
+    {
+        // if this rectangle did not merge yet
+        before_merge_y_list.clear();
+        after_merge_y_list.clear();
+
+        if (not_merge[c])
+        {
+            // set not_merge[c] = 0
+            not_merge[c] = 0;
+
+            before_merge_y_list.push_back(no_merge_list[c].bl_y);
+            before_merge_y_list.push_back(no_merge_list[c].tr_y);
+
+            // find rectangle with the same bl_y and t_y
+            for (int d = c + 1; d < no_merge_list.size(); d++)
+            {
+                // if no_merge_list[d] and no_merge_list[c] have same bl_y and tr_y
+                if ((no_merge_list[d].bl_x == no_merge_list[c].bl_x) &&
+                    (no_merge_list[d].tr_x == no_merge_list[c].tr_x))
+                {
+                    // set not_merge[d] = 0
+                    not_merge[d] = 0;
+
+                    // add x point into merge_x_list to merge later
+                    before_merge_y_list.push_back(no_merge_list[d].bl_y);
+                    before_merge_y_list.push_back(no_merge_list[d].tr_y);
+                }
+            }
+
+            // for no_merge_list[c], merge with other rect that has same y
+            // merge x point
+            sort(before_merge_y_list.begin(), before_merge_y_list.end());
+
+            for (int d = 0; d < before_merge_y_list.size() - 1;)
+            {
+                //cout << "hihi 1" << endl;
+                // if not duplicate, push into after_merge_x_list
+                if (before_merge_y_list[d] != before_merge_y_list[d + 1])
+                {
+                    after_merge_y_list.push_back(before_merge_y_list[d]);
+                    d++;
+                }
+                // if before_merge_x_list[d] == before_merge_x_list[d+1], skip this two points
+                else
+                {
+                    d += 2;
+                }
+            }
+            // add last element into afte_merge_list
+            after_merge_y_list.push_back(before_merge_y_list.back());
+
+            // push merge rectangle into init_fill_list
+            for (int d = 0; d < after_merge_y_list.size() - 1; d += 2)
+            {
+                //cout << "hihi 2" << endl;
+                //net_temp.rect.bl_x = after_merge_x_list[d];
+                //net_temp.rect.tr_x = after_merge_x_list[d+1];
+                //net_temp.rect.bl_y = no_merge_list[c].bl_y;
+                //net_temp.rect.tr_y = no_merge_list[c].tr_y;
+                net_temp.rect.bl_x = no_merge_list[c].bl_x;
+                net_temp.rect.tr_x = no_merge_list[c].tr_x;
+                net_temp.rect.bl_y = after_merge_y_list[d];
+                net_temp.rect.tr_y = after_merge_y_list[d + 1];
+                init_fill_list.push_back(net_temp);
+                grid[layer][i][j].init_fill->push_back(init_fill_count);
+                init_fill_count++;
+            }
+        }
+    }
+
+    poly_bin_instersect.clear();
+    intersect_x.clear();
+    intersect_y.clear();
+    no_merge_list.clear();
+    before_merge_y_list.clear();
+    after_merge_y_list.clear();
+}
+
+void Layout::random_fill(int layer, int i, int j, int x_ratio, int y_ratio)
+{
+    int range_x = bin_size / (min_space[layer] * x_ratio);
+    int range_y = bin_size / (min_space[layer] * y_ratio);
+    Rectangle bin_rect;
+    Rectangle temp;
+    net net_temp;
+    int area_temp;
+    bool no_normal, no_fill;
+
+    // store random fill without merge
+    vector<Rectangle> no_merge_list;
+    vector<int> before_merge_y_list;
+    vector<int> after_merge_y_list;
+
+    bin_rect.set_rectangle(i * bin_size, j * bin_size, (i + 1) * bin_size, (j + 1) * bin_size);
+
+    // cut one bin into many small region
+    // each region size is a square with size = (min_space[layer] * 2)
+    // in order to insert a square fill with size = min_space
+
+    net_temp.layer = layer;
+    net_temp.net_id = 0;
+
+    for (int x = 0; x < range_x; x++)
+    {
+        no_merge_list.clear();
+        before_merge_y_list.clear();
+        after_merge_y_list.clear();
+
+        temp.bl_x = bin_rect.bl_x + (x * min_space[layer] * x_ratio);
+        temp.tr_x = bin_rect.bl_x + ((x + 1) * min_space[layer] * x_ratio);
+
+        // find all possible fill region based on between (x * min_space[layer] * 3) and ( (x+1) * min_space[layer] * 3 )
+        for (int y = 0; y < range_y; y++)
+        {
+            // each region size is a square with size = (min_space[layer] * 2)
+
+            temp.bl_y = bin_rect.bl_y + (y * min_space[layer] * y_ratio);
+            temp.tr_y = bin_rect.bl_y + ((y + 1) * min_space[layer] * y_ratio);
+
+            // test whether this region is empty
+            no_normal = 1;
+            no_fill = 1;
+
+            // test whether this region has normal
+            for (auto v : *(grid[layer][i][j].normal))
+            {
+                area_temp = area_overlap(normal_list[v].rect, temp);
+                if (area_temp > 0)
+                {
+                    no_normal = 0;
+                }
+            }
+
+            // test whether this region has fill
+            for (auto v : *(grid[layer][i][j].fill))
+            {
+                area_temp = area_overlap(fill_list[v].rect, temp);
+                if (area_temp > 0)
+                {
+                    no_fill = 0;
+                }
+            }
+
+            // if this region does not have normal and fill
+            // add possible fill region into no_merge list
+            if (no_normal && no_fill)
+            {
+                //no_merge_list.push_back(temp);
+
+                net_temp.rect.bl_x = temp.bl_x + min_space[layer];
+                net_temp.rect.bl_y = temp.bl_y + min_space[layer];
+                net_temp.rect.tr_x = temp.tr_x - min_space[layer];
+                net_temp.rect.tr_y = temp.tr_y - min_space[layer];
+                fill_list.push_back(net_temp);
+                grid[layer][i][j].fill->push_back(metal_fill_count);
+                metal_fill_count++;
+                area_temp = (temp.tr_x - temp.bl_x - 2 * min_space[layer]) * (temp.tr_y - temp.bl_y - 2 * min_space[layer]);
+                grid[layer][i][j].fill_area += area_temp;
+                
+                // calculate for debug
+                random_fill_count++;
+            }
+        }      
+    }
 }

@@ -55,10 +55,20 @@ public:
     void set_min_space(int layer, int space);
 
     // find available fill region = region that is not normal poly
-    void find_fill_region();
+    // 6/01 add merge inside
+    void find_fill_region_x(int layer, int i, int j);
+    void find_fill_region_y(int layer, int i, int j);
 
     // insert fill in availiable fill region 
-    void metal_fill();
+    void metal_fill(int layer, int i, int j);
+
+    // random fill to improve density
+    // ratio define square size = ratio * min_space 
+    void random_fill(int layer, int i, int j, int x_ratio, int y_ratio);
+
+
+    // Insert fill
+    void fill_insertion();
 
     void window_based_density_check();
 
@@ -93,6 +103,11 @@ public:
     vector<int> min_width;
     vector<int> max_fill_width;
     vector<int> min_space;
+
+    // 6/01
+    int init_fill_count = 0;
+    int metal_fill_count = 0;
+    int random_fill_count = 0;
 
     
 };

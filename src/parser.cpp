@@ -141,3 +141,91 @@ void readrule::dump(){
     }
 }
 
+readprocess::readprocess(){
+    window_size = 0;
+    //area_table.reserve(45);
+    //fringe_table.reserve(20);
+    //lateral_table.reserve(9);
+}
+
+string readprocess::key_gen(int x,int y, table_type type){
+    string lateral_key("*");
+    string area_key("*");
+    string fringe_key("*");
+
+    if(y == 0){
+        cerr<<"The range of the second parameter is 1~9\n";
+        exit(-1);
+    }
+    if(x > 9 || x < 0){
+        cerr<<"Parameter out of range\n";
+        exit(-1);
+    }
+    if(y > 9 || y < 1){
+        cerr<<"Parameter out of range\n";
+        exit(-1);
+    }
+    // handle diagonal lateral cases
+    if (x == y){
+        lateral_key.assign("lateral_table_"+to_string(x));
+    }
+    // handle area and fringe cases
+    else{
+        if(x == 0){
+            area_key.assign("area_table_"+to_string(y)+"_"+to_string(x));
+        }
+        else if(x == 1){
+            area_key.assign("area_table_"+to_string(x)+"_"+to_string(y));
+            fringe_key.assign("fringe_table_"+to_string(x)+"_"+to_string(y));
+            
+        }
+        else if (x > y){
+            area_key.assign("area_table_"+to_string(y)+"_"+to_string(x));
+            fringe_key.assign("fringe_table_"+to_string(x)+"_"+to_string(y));
+        }
+        else{
+            area_key.assign("area_table_"+to_string(x)+"_"+to_string(y));
+            fringe_key.assign("fringe_table_"+to_string(x)+"_"+to_string(y));
+        }
+    }
+    switch(type){
+        case area: return area_key; break;
+        case lateral: return lateral_key; break;
+        case fringe: return fringe_key; break;
+    }
+}
+
+void readprocess::read_file(char* filename){
+    ifstream file(filename);
+    string temp;
+    size_t pos;
+
+    // lateral table only has 9 
+    // fringe has 9*9 - 9 = 72
+    if(!file){  // check file exist or not
+        cerr<<"Can't open process file\n";
+        exit(-1);
+    }
+    // read first commented line and ignore it
+    getline(file, temp);
+    // read window size
+    getline(file, temp);
+    pos = temp.find(' ');
+    temp = temp.substr(++pos);
+    window_size = stoi(temp);
+    cout<<window_size<<endl;
+    // read two commented lines
+    getline(file, temp);
+    getline(file, temp);
+    getline(file, temp);
+    cout<<temp;        
+    //while(getline(file,temp)){
+        /* if(temp[0] == ';'){
+            cout<<"This line should be ignored\n";
+            cout<<"//"<<temp;
+        } */
+      //  temp.append("\n");
+        //cout << temp;
+
+    //}
+}
