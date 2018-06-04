@@ -7,16 +7,12 @@ Layout::Layout()
     init_fill_list.reserve(3E5);
     // pos 0 is empty
     min_density.reserve(10);
-    min_density.push_back(0);
 
     min_width.reserve(10);
-    min_width.push_back(0);
 
     max_fill_width.reserve(10);
-    max_fill_width.push_back(0);
 
     min_space.reserve(10);
-    min_space.push_back(0);
 }
 
 void Layout::read_file(char *filename)
@@ -161,32 +157,23 @@ void Layout::bin_normal_area(int _l, int _x, int _y)
     grid[_l][_x][_y].normal_area = temp_area;
 }
 
-/**** 5/29 Not necessary !!!!! ****/
-void Layout::set_min_density(int layer, double density)
+void Layout::set_rules(const vector<rule>& _rules)
 {
-    //cout << "set min density = " << density << endl;
-    min_density.push_back(density);
-}
 
-void Layout::set_min_width(int layer, int width)
-{
-    //cout << "set min width = " << width << endl;
-    min_width.push_back(width);
-}
+    // reserve vector[0] (dummy)
+    min_density.push_back(0);
+    min_width.push_back(0);
+    max_fill_width.push_back(0);
+    min_space.push_back(0);
 
-void Layout::set_max_fill_width(int layer, int width)
-{
-    //cout << "set max width = " << width << endl;
-    max_fill_width.push_back(width);
+    // pusu rule from rule 1 to 9
+    for(auto r: _rules){
+        min_density.push_back(r.min_density);
+        min_width.push_back(r.min_width);
+        max_fill_width.push_back(r.max_fill_width);
+        min_space.push_back(r.min_space);
+    }
 }
-
-void Layout::set_min_space(int layer, int space)
-{
-    //cout << "set min space = " << space << endl;
-    min_space.push_back(space);
-}
-/***********************************/
-
 
 void Layout::metal_fill(int layer, int i, int j)
 {
@@ -830,6 +817,7 @@ void Layout::fill_insertion()
 {
     int range_x = normal_list[0].rect.tr_x / bin_size;
     int range_y = normal_list[0].rect.tr_y / bin_size;
+    cout << "layer density 9 " << min_density[9] << endl;
 
     // for each bin
     for (int layer = 1; layer <= 9; layer++) // 5/29 modified

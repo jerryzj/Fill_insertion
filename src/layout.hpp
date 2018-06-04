@@ -5,6 +5,8 @@
 #include <vector>
 #include <string.h>
 #include "rectangle.hpp"
+#include "parser.hpp"   // in order to read rule file
+
 
 using namespace std;
 
@@ -49,11 +51,8 @@ public:
 
     
     // set fule infor mation min_density for each layer
-    void set_min_density(int layer, double density);
-    void set_min_width(int layer, int width);
-    void set_max_fill_width(int layer, int width);
-    void set_min_space(int layer, int space);
-
+    void set_rules(const vector<rule>& _rules);
+    
     // find available fill region = region that is not normal poly
     // 6/01 add merge inside
     void find_fill_region_x(int layer, int i, int j);

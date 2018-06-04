@@ -48,14 +48,8 @@ int main(int argc ,char *argv[]){
     layout.create3Dbin();
     layout.bin_mapping();
     
-    int layer = 1;
-    for(auto i: rule.rules){
-        layout.set_min_density(layer, i.min_density);
-        layout.set_min_width(layer, i.min_width);
-        layout.set_max_fill_width(layer, i.max_fill_width);
-        layout.set_min_space(layer, i.min_space);
-        layer++;    
-    }
+    layout.set_rules(rule.rules);   // input vector<rule>
+
     cout << endl;
     layout.fill_insertion();
     // dump specific in 
