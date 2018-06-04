@@ -662,7 +662,8 @@ void Layout::fill_insertion()
 {
     int range_x = normal_list[0].rect.tr_x / bin_size;
     int range_y = normal_list[0].rect.tr_y / bin_size;
-
+    vector<Rectangle> fill_regions;
+    
     // for each bin
     for (int layer = 1; layer <= 9; layer++) // 5/29 modified
     {
@@ -674,14 +675,14 @@ void Layout::fill_insertion()
                 // if layer = 1,3,5,7,9 insert fill by x (vertical)
                 if (layer % 2 == 1)
                 {
-                    find_fill_region_x(layer, i, j);
+                    fill_regions = find_fill_region_x(layer, i, j);
                 }
                 // else, layer = 2,4,6,8 insert fill by y (horizontal)
                 else
                 {
-                    find_fill_region_y(layer, i, j);
+                    fill_regions = find_fill_region_y(layer, i, j);
                 }
-                metal_fill(layer, i, j);
+                metal_fill(layer, i, j, fill_regions);
                 // 3,3 is minimum requirement for not violate DRC
                 //random_fill(layer, i, j, 3, 3);
 
@@ -707,7 +708,7 @@ void Layout::fill_insertion()
 }
 
 
-void Layout::metal_fill(int layer, int i, int j)
+void Layout::metal_fill(int layer, int i, int j, const vector<Rectangle>& fill_regions)
 {
 
     Rectangle temp;
@@ -734,7 +735,7 @@ void Layout::metal_fill(int layer, int i, int j)
 
     int width_left, length_left;
 
-    // Calculate dennsity
+    // Calculate density
     bin_normal_area(layer, i, j);
     normal_density = (double)(grid[layer][i][j].normal_area / (double)(bin_size * bin_size));
 
@@ -746,27 +747,23 @@ void Layout::metal_fill(int layer, int i, int j)
     fill_area_sum = 0;
     //while (curr_density <= min_density[layer] && (!no_more_fill_region)) 5/29
 
-    no_more_fill_region = (fill_region_used_count > grid[layer][i][j].init_fill->size());
-    while (!no_more_fill_region)
-    {
+    for (auto r: fill_regions) {
         fill_bl_x.clear();
         fill_bl_y.clear();
         fill_tr_x.clear();
         fill_tr_y.clear();
-        fill_index = grid[layer][i][j].init_fill->at(fill_region_used_count - 1);
 
-        // for init fill region, shrink min_space
-        temp.bl_x = init_fill_list[fill_index].rect.bl_x + min_space[layer];
-        temp.bl_y = init_fill_list[fill_index].rect.bl_y + min_space[layer];
-        temp.tr_x = init_fill_list[fill_index].rect.tr_x - min_space[layer];
-        temp.tr_y = init_fill_list[fill_index].rect.tr_y - min_space[layer];
+        temp.bl_x = r.bl_x + min_space[layer];
+        temp.bl_y = r.bl_y + min_space[layer];
+        temp.tr_x = r.tr_x - min_space[layer];
+        temp.tr_y = r.tr_y - min_space[layer];
+
         fill_width = temp.tr_x - temp.bl_x;
         fill_length = temp.tr_y - temp.bl_y;
         fill_width_ratio = fill_width / max_fill_width[layer];
         fill_length_ratio = fill_length / max_fill_width[layer];
 
-        //cout << "fill_w " << fill_width << " fill_L = " << fill_length << endl;
-        // if width and length both larger than min_width, start fill
+
         if (fill_width >= min_width[layer] && fill_length >= min_width[layer])
         {
             // if width ratio > 0, means width > max_width, cut width into 1300-130 = 1170
@@ -775,7 +772,8 @@ void Layout::metal_fill(int layer, int i, int j)
                 for (int a = 0; a < fill_width_ratio; a++)
                 {
                     fill_bl_x.push_back(temp.bl_x + (a * max_fill_width[layer]));
-                    fill_tr_x.push_back(temp.bl_x + (a * max_fill_width[layer]) + max_fill_width[layer] - min_space[layer]);
+                    fill_tr_x.push_back(temp.bl_x + (a * max_fill_width[layer]) + 
+                                        max_fill_width[layer] - min_space[layer]);
                 }
 
                 width_left = temp.tr_x - (temp.bl_x + (fill_width_ratio * max_fill_width[layer]));
@@ -799,7 +797,8 @@ void Layout::metal_fill(int layer, int i, int j)
                 for (int a = 0; a < fill_length_ratio; a++)
                 {
                     fill_bl_y.push_back(temp.bl_y + (a * max_fill_width[layer]));
-                    fill_tr_y.push_back(temp.bl_y + (a * max_fill_width[layer]) + max_fill_width[layer] - min_space[layer]);
+                    fill_tr_y.push_back(temp.bl_y + (a * max_fill_width[layer]) + 
+                                        max_fill_width[layer] - min_space[layer]);
                 }
                 length_left = temp.tr_y - (temp.bl_y + (fill_length_ratio * max_fill_width[layer]));
                 if (length_left > min_width[layer])
@@ -826,13 +825,13 @@ void Layout::metal_fill(int layer, int i, int j)
                     fill_list.push_back(net_temp);
                     area_temp = net_temp.rect.area();
                     fill_area_sum += area_temp;
-                    grid[layer][i][j].fill->push_back(metal_fill_count);
+
+                    assign_fill(metal_fill_count); 
+                    //grid[layer][i][j].fill->push_back(metal_fill_count);
                     metal_fill_count++;
                 }
             }
         }
-        fill_region_used_count++;
-        no_more_fill_region = (fill_region_used_count > grid[layer][i][j].init_fill->size());
     }
 
     curr_density += ((double)fill_area_sum / (double)(bin_size * bin_size));
