@@ -4,7 +4,6 @@ Layout::Layout()
 {
     normal_list.reserve(3E5);
     fill_list.reserve(3E5);
-    init_fill_list.reserve(3E5);
     // pos 0 is empty
     min_density.reserve(10);
 
@@ -113,7 +112,7 @@ void Layout::bin_mapping()
 void Layout::assign_normal(int i)
 {
     int layer;
-
+    Rectangle temp_rect;
     Rectangle bin_index;
 
     layer = normal_list[i].layer;
@@ -123,15 +122,21 @@ void Layout::assign_normal(int i)
     bin_index.tr_y = (normal_list[i].rect.tr_y - 1) / bin_size;
 
     for (int j = bin_index.bl_x; j <= bin_index.tr_x; j++)
-        for (int k = bin_index.bl_y; k <= bin_index.tr_y; k++)
+        for (int k = bin_index.bl_y; k <= bin_index.tr_y; k++) {
             grid[layer][j][k].normal->push_back(i);
+            temp_rect.set_rectangle(j*bin_size, k*bin_size, 
+                                    (j+1)*bin_size, (k+1)*bin_size);
+            grid[layer][j][k].normal_area += 
+                area_overlap(normal_list[i].rect, temp_rect);
+        }
+
 
 }
 
 void Layout::assign_fill(int i)
 {
     int layer;
-
+    Rectangle temp_rect;
     Rectangle bin_index;
 
     layer = fill_list[i].layer;
@@ -141,8 +146,14 @@ void Layout::assign_fill(int i)
     bin_index.tr_y = (fill_list[i].rect.tr_y - 1) / bin_size;
 
     for (int j = bin_index.bl_x; j <= bin_index.tr_x; j++)
-        for (int k = bin_index.bl_y; k <= bin_index.tr_y; k++)
+        for (int k = bin_index.bl_y; k <= bin_index.tr_y; k++) {
             grid[layer][j][k].fill->push_back(i);
+            temp_rect.set_rectangle(j*bin_size, k*bin_size, 
+                            (j+1)*bin_size, (k+1)*bin_size);
+            grid[layer][j][k].fill_area += 
+                area_overlap(fill_list[i].rect, temp_rect);
+        }
+            
 
 }
 
@@ -566,6 +577,7 @@ void Layout::DRC_check_space()
     //dump_fill_list();
 }
 
+
 void Layout::dump_fill_list()
 {
     cout << "dump fill list" << endl;
@@ -682,7 +694,7 @@ void Layout::fill_insertion()
                 {
                     fill_regions = find_fill_region_y(layer, i, j);
                 }
-                metal_fill(layer, i, j, fill_regions);
+                metal_fill(layer, fill_regions);
                 // 3,3 is minimum requirement for not violate DRC
                 //random_fill(layer, i, j, 3, 3);
 
@@ -694,31 +706,18 @@ void Layout::fill_insertion()
                 if (density <=  min_density[layer])
                      cout << layer << " " << i << " " << j << ": " << density << endl;
 
-                /*
-                if (layer == 9 && (i == 8 || i == 9) && (j == 102 || j == 103 || j == 104 || j == 105))
-                {
-                    cout << layer << " " << i << " " << j << " random count: " << random_fill_count << endl;
-                }
-                */
-
-                // add random fill to improve density for all pin
             }
         }
     }
 }
 
 
-void Layout::metal_fill(int layer, int i, int j, const vector<Rectangle>& fill_regions)
+void Layout::metal_fill(int layer, const vector<Rectangle>& fill_regions)
 {
 
     Rectangle temp;
     net net_temp;
 
-    double normal_density; // normal metal density
-    double curr_density; // current bin density
-    bool no_more_fill_region;
-    int fill_region_used_count;
-    int fill_index;
     int fill_width, fill_length;
     int fill_width_ratio, fill_length_ratio;
 
@@ -727,25 +726,12 @@ void Layout::metal_fill(int layer, int i, int j, const vector<Rectangle>& fill_r
     vector<int> fill_tr_x;  fill_tr_x.reserve(20);
     vector<int> fill_tr_y;  fill_tr_y.reserve(20);
 
-    int area_temp;
     int density_pass_count = 0;
     int density_fail_count = 0;
     int no_fill_count = 0;
-    int fill_area_sum;
+
 
     int width_left, length_left;
-
-    // Calculate density
-    bin_normal_area(layer, i, j);
-    normal_density = (double)(grid[layer][i][j].normal_area / (double)(bin_size * bin_size));
-
-    // Start fill insertion
-    curr_density = normal_density;
-    fill_region_used_count = 1;
-    net_temp.layer = layer;
-    net_temp.net_id = 0;
-    fill_area_sum = 0;
-    //while (curr_density <= min_density[layer] && (!no_more_fill_region)) 5/29
 
     for (auto r: fill_regions) {
         fill_bl_x.clear();
@@ -820,37 +806,19 @@ void Layout::metal_fill(int layer, int i, int j, const vector<Rectangle>& fill_r
             {
                 for (int b = 0; b < fill_length_ratio; b++)
                 {
+                    net_temp.layer = layer;
+                    net_temp.net_id = 0;
                     net_temp.rect.set_rectangle(fill_bl_x[a], fill_bl_y[b],
                                                 fill_tr_x[a], fill_tr_y[b]);
                     fill_list.push_back(net_temp);
-                    area_temp = net_temp.rect.area();
-                    fill_area_sum += area_temp;
 
+                    // assign fill with ID = metal_fill_count to bin (s)
+                    // to multiple bins if possible
+                    // assign_fill increase fill area as well
                     assign_fill(metal_fill_count); 
-                    //grid[layer][i][j].fill->push_back(metal_fill_count);
                     metal_fill_count++;
                 }
             }
-        }
-    }
-
-    curr_density += ((double)fill_area_sum / (double)(bin_size * bin_size));
-    grid[layer][i][j].fill_area = fill_area_sum;
-    // run time density check
-
-    if (curr_density < min_density[layer])
-    {
-        //cout << "fail ";
-        //cout << "Fail: " << layer << " " << i << " " << j << " " << endl;
-        //cout << " total density " << curr_density << " " << endl;
-        if (curr_density == normal_density)
-        {
-            //cout << "Fail: " << layer << " " << i << " " << j << " " << endl;
-            //cout << "no fill, poly density = " << normal_density << endl;
-        }
-        else
-        {
-            //cout << endl;
         }
     }
 }

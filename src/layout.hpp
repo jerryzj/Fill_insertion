@@ -21,13 +21,11 @@ public:
     struct bin{
         vector<int>* normal;
         vector<int>* fill;
-        //vector<int>* init_fill;
         int normal_area;
         int fill_area;
         bin(){  // structure constructor
             normal = new vector<int>;
             fill = new vector<int>;
-            //init_fill = new vector<int>;
             normal_area = 0;
             fill_area = 0;
         }
@@ -60,7 +58,7 @@ public:
     vector<Rectangle> find_fill_region_y(int layer, int i, int j);
 
     // insert fill in availiable fill region 
-    void metal_fill(int layer, int i, int j, const vector<Rectangle>& fill_regions);
+    void metal_fill(int layer, const vector<Rectangle>& fill_regions);
 
     // random fill to improve density
     // ratio define square size = ratio * min_space 
@@ -88,7 +86,6 @@ public:
     // offset = buttom-left corner of (original) boundary
     vector<net> normal_list;
     vector<net> fill_list;
-    vector<net> init_fill_list;
     // 3D bin layer*row*col
     // layer = 9 (L1 to L9), L0 stores nothing 
     bin ***grid;
@@ -105,7 +102,6 @@ private:
     vector<int> min_space;
 
     // 6/01
-    //int init_fill_count = 0;
     int metal_fill_count = 0;
     int random_fill_count = 0;
 
