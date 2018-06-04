@@ -104,25 +104,48 @@ void Layout::bin_mapping()
     // 5/24 revise bin assignment
     // bl, tr = (0, 5000), (0, 5000) will only be
     // assigned to grid[layer][0][0]
-    int layer = 0;
+
+    for (int i = 1; i < (int)normal_list.size(); i++)
+        assign_normal(i);
+
+}
+
+void Layout::assign_normal(int i)
+{
+    int layer;
 
     Rectangle bin_index;
-    for (int i = 1; i < (int)normal_list.size(); i++)
-    {
-        layer = normal_list[i].layer;
-        bin_index.bl_x = normal_list[i].rect.bl_x / bin_size;
-        bin_index.bl_y = normal_list[i].rect.bl_y / bin_size;
-        bin_index.tr_x = (normal_list[i].rect.tr_x - 1) / bin_size;
-        bin_index.tr_y = (normal_list[i].rect.tr_y - 1) / bin_size;
-        for (int j = bin_index.bl_x; j <= bin_index.tr_x; j++)
-        {
-            for (int k = bin_index.bl_y; k <= bin_index.tr_y; k++)
-            {
-                grid[layer][j][k].normal->push_back(i);
-            }
-        }
-    }
+
+    layer = normal_list[i].layer;
+    bin_index.bl_x = normal_list[i].rect.bl_x / bin_size;
+    bin_index.bl_y = normal_list[i].rect.bl_y / bin_size;
+    bin_index.tr_x = (normal_list[i].rect.tr_x - 1) / bin_size;
+    bin_index.tr_y = (normal_list[i].rect.tr_y - 1) / bin_size;
+
+    for (int j = bin_index.bl_x; j <= bin_index.tr_x; j++)
+        for (int k = bin_index.bl_y; k <= bin_index.tr_y; k++)
+            grid[layer][j][k].normal->push_back(i);
+
 }
+
+void Layout::assign_fill(int i)
+{
+    int layer;
+
+    Rectangle bin_index;
+
+    layer = fill_list[i].layer;
+    bin_index.bl_x = fill_list[i].rect.bl_x / bin_size;
+    bin_index.bl_y = fill_list[i].rect.bl_y / bin_size;
+    bin_index.tr_x = (fill_list[i].rect.tr_x - 1) / bin_size;
+    bin_index.tr_y = (fill_list[i].rect.tr_y - 1) / bin_size;
+
+    for (int j = bin_index.bl_x; j <= bin_index.tr_x; j++)
+        for (int k = bin_index.bl_y; k <= bin_index.tr_y; k++)
+            grid[layer][j][k].fill->push_back(i);
+
+}
+
 
 void Layout::dump()
 {

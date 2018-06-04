@@ -47,6 +47,8 @@ public:
 
     // this updates the normal and fill area of grid[_l][_x][_y] 
     void bin_normal_area(int _l, int _x, int _y); 
+    void assign_normal(int i);
+    void assign_fill(int i);
 
     
     // set rule information
