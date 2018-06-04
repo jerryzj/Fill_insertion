@@ -32,7 +32,7 @@ int main(int argc ,char *argv[]){
     filename.replace(pos+1,filename.length()-pos,config.rule);
     // here filename should be ./circuit#/rule.dat
     //cout<<filename;
-    // for testing 
+    // for testing 6 
     rule.read_file((char*)filename.c_str());
     //rule.dump();
     // read layout file
@@ -59,6 +59,6 @@ int main(int argc ,char *argv[]){
     layout.DRC_check_width();
     layout.DRC_check_space();
 
-    layout.dump_bin(9, 69, 33);
+    //layout.dump_bin(9, 69, 33);
     return 0;
 }
