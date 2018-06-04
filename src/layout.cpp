@@ -857,7 +857,7 @@ void Layout::metal_fill(int layer, int i, int j)
 }
 
 
-void Layout::find_fill_region_x(int layer, int i, int j)
+vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j)
 {
     Rectangle temp;
     net net_temp;
@@ -874,6 +874,7 @@ void Layout::find_fill_region_x(int layer, int i, int j)
     bool not_poly;
 
     vector<Rectangle> no_merge_list;
+    vector<Rectangle> fill_regions;
 
     poly_bin_instersect.clear();
     intersect_x.clear();
@@ -1084,10 +1085,10 @@ void Layout::find_fill_region_x(int layer, int i, int j)
                 net_temp.rect.tr_x = after_merge_x_list[d + 1];
                 net_temp.rect.bl_y = no_merge_list[c].bl_y;
                 net_temp.rect.tr_y = no_merge_list[c].tr_y;
-                init_fill_list.push_back(net_temp);
-                grid[layer][i][j].init_fill->push_back(init_fill_count);
-                init_fill_count++;
-                
+                //init_fill_list.push_back(net_temp);
+                //grid[layer][i][j].init_fill->push_back(init_fill_count);
+                //init_fill_count++;
+                fill_regions.push_back(net_temp.rect);
             }
         }
     }
@@ -1097,12 +1098,14 @@ void Layout::find_fill_region_x(int layer, int i, int j)
     no_merge_list.clear();
     before_merge_x_list.clear();
     after_merge_x_list.clear();
+
+    return fill_regions;
 }
 
 
 
 
-void Layout::find_fill_region_y(int layer, int i, int j)
+vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j)
 {
     Rectangle temp;
     net net_temp;
@@ -1119,6 +1122,7 @@ void Layout::find_fill_region_y(int layer, int i, int j)
     bool not_poly;
 
     vector<Rectangle> no_merge_list;
+    vector<Rectangle> fill_regions;
 
     poly_bin_instersect.clear();
     intersect_x.clear();
@@ -1322,9 +1326,10 @@ void Layout::find_fill_region_y(int layer, int i, int j)
                 net_temp.rect.tr_x = no_merge_list[c].tr_x;
                 net_temp.rect.bl_y = after_merge_y_list[d];
                 net_temp.rect.tr_y = after_merge_y_list[d + 1];
-                init_fill_list.push_back(net_temp);
-                grid[layer][i][j].init_fill->push_back(init_fill_count);
-                init_fill_count++;
+                //init_fill_list.push_back(net_temp);
+                //grid[layer][i][j].init_fill->push_back(init_fill_count);
+                //init_fill_count++;
+                fill_regions.push_back(net_temp.rect);
             }
         }
     }
@@ -1335,6 +1340,8 @@ void Layout::find_fill_region_y(int layer, int i, int j)
     no_merge_list.clear();
     before_merge_y_list.clear();
     after_merge_y_list.clear();
+
+    return fill_regions;
 }
 
 // 6/4 Update: Random fill is not needed 

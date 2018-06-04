@@ -56,8 +56,8 @@ public:
 
     // find available fill region = region that is not normal poly
     // 6/01 add merge inside
-    void find_fill_region_x(int layer, int i, int j);
-    void find_fill_region_y(int layer, int i, int j);
+    vector<Rectangle> find_fill_region_x(int layer, int i, int j);
+    vector<Rectangle> find_fill_region_y(int layer, int i, int j);
 
     // insert fill in availiable fill region 
     void metal_fill(int layer, int i, int j);
