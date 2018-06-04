@@ -166,7 +166,7 @@ void Layout::set_rules(const vector<rule>& _rules)
     max_fill_width.push_back(0);
     min_space.push_back(0);
 
-    // pusu rule from rule 1 to 9
+    // push rule from rule 1 to 9
     for(auto r: _rules){
         min_density.push_back(r.min_density);
         min_width.push_back(r.min_width);
@@ -713,10 +713,9 @@ void Layout::dump_bin(int layer, int x, int y)
     fstream normal_file;
     fstream fill_file;
     string temp;
-    int lower_bound_x = x * bin_size;
-    int lower_bound_y = y * bin_size;
-    int upper_bound_x = (x + 1) * bin_size;
-    int upper_bound_y = (y + 1) * bin_size;
+    
+    Rectangle bound(x*bin_size, y*bin_size, 
+                    (x+1)*bin_size, (y+1)*bin_size);
 
     double density = ((double)grid[layer][x][y].normal_area +
                       (double)grid[layer][x][y].fill_area) /
@@ -740,11 +739,9 @@ void Layout::dump_bin(int layer, int x, int y)
         cerr << "Error create bin_normal file\n";
         exit(-1);
     }
-    temp.assign(to_string(lower_bound_x) + " " + 
-                to_string(lower_bound_y) + " " + 
-                to_string(upper_bound_x) + " " + 
-                to_string(upper_bound_y) +
-                "; chip boundary\n");
+
+
+    temp.assign(bound.dump_string()+ "; chip boundary\n");
 
     // write chip boundary to normal file
     normal_file.write(temp.c_str(), temp.length());
@@ -752,15 +749,9 @@ void Layout::dump_bin(int layer, int x, int y)
     for (auto i : *(grid[layer][x][y].normal))
     {
         Rectangle temp = normal_list[i].rect;
-        temp.bl_x = max(temp.bl_x, lower_bound_x);
-        temp.bl_y = max(temp.bl_y, lower_bound_y);
-        temp.tr_x = min(temp.tr_x, upper_bound_x);
-        temp.tr_y = min(temp.tr_y, upper_bound_y);
+        temp = rect_overlap(temp, bound);
 
-        string s(to_string(temp.bl_x) + " " +
-                 to_string(temp.bl_y) + " " +
-                 to_string(temp.tr_x) + " " +
-                 to_string(temp.tr_y) + " " +
+        string s(temp.dump_string() + " " +
                  to_string(normal_list[i].net_id) + " " +
                  "normal\n");
         normal_file.write(s.c_str(), s.length());
@@ -774,26 +765,16 @@ void Layout::dump_bin(int layer, int x, int y)
         cerr << "Error create bin_fill file\n";
         exit(-1);
     }
-    temp.assign(to_string(lower_bound_x) + " " + 
-                to_string(lower_bound_y) + " " + 
-                to_string(upper_bound_x) + " " + 
-                to_string(upper_bound_y) +
-                "; chip boundary\n");
+    temp.assign(bound.dump_string() + "; chip boundary\n");
 
     // write chip boundary to fill file
     fill_file.write(temp.c_str(), temp.length());
     for (auto i : *(grid[layer][x][y].fill))
     {
         Rectangle temp = fill_list[i].rect;
-        temp.bl_x = max(temp.bl_x, lower_bound_x);
-        temp.bl_y = max(temp.bl_y, lower_bound_y);
-        temp.tr_x = min(temp.tr_x, upper_bound_x);
-        temp.tr_y = min(temp.tr_y, upper_bound_y);
+        temp = rect_overlap(temp, bound);
 
-        string s(to_string(temp.bl_x) + " " +
-                 to_string(temp.bl_y) + " " +
-                 to_string(temp.tr_x) + " " +
-                 to_string(temp.tr_y) + " " +
+        string s(temp.dump_string() +" " +
                  to_string(fill_list[i].net_id) + " " +
                  "fill\n");
         fill_file.write(s.c_str(), s.length());
@@ -872,7 +853,8 @@ void Layout::find_fill_region_x(int layer, int i, int j)
     intersect_x.clear();
     intersect_y.clear();
     no_merge_list.clear();
-    bin_rect.set_rectangle(i * bin_size, j * bin_size, (i + 1) * bin_size, (j + 1) * bin_size);
+    bin_rect.set_rectangle(i*bin_size, j*bin_size, 
+                            (i+1)*bin_size, (j+1)*bin_size);
 
     //cout << "***** (" << layer << " " << i << " " << j << " "
     //     << ")******" << endl;
@@ -880,22 +862,7 @@ void Layout::find_fill_region_x(int layer, int i, int j)
     //cout << "//=== find intersection of bin and poly ===// " << endl;
     for (auto poly : *(grid[layer][i][j].normal))
     {
-        if (normal_list[poly].rect.bl_x >= bin_rect.bl_x)
-            temp.bl_x = normal_list[poly].rect.bl_x;
-        else
-            temp.bl_x = bin_rect.bl_x;
-        if (normal_list[poly].rect.bl_y >= bin_rect.bl_y)
-            temp.bl_y = normal_list[poly].rect.bl_y;
-        else
-            temp.bl_y = bin_rect.bl_y;
-        if (normal_list[poly].rect.tr_x >= bin_rect.tr_x)
-            temp.tr_x = bin_rect.tr_x;
-        else
-            temp.tr_x = normal_list[poly].rect.tr_x;
-        if (normal_list[poly].rect.tr_y >= bin_rect.tr_y)
-            temp.tr_y = bin_rect.tr_y;
-        else
-            temp.tr_y = normal_list[poly].rect.tr_y;
+        temp = rect_overlap(normal_list[poly].rect, bin_rect);
         poly_bin_instersect.push_back(temp);
     }
 
@@ -1136,22 +1103,7 @@ void Layout::find_fill_region_y(int layer, int i, int j)
 
     for (auto poly : *(grid[layer][i][j].normal))
     {
-        if (normal_list[poly].rect.bl_x >= bin_rect.bl_x)
-            temp.bl_x = normal_list[poly].rect.bl_x;
-        else
-            temp.bl_x = bin_rect.bl_x;
-        if (normal_list[poly].rect.bl_y >= bin_rect.bl_y)
-            temp.bl_y = normal_list[poly].rect.bl_y;
-        else
-            temp.bl_y = bin_rect.bl_y;
-        if (normal_list[poly].rect.tr_x >= bin_rect.tr_x)
-            temp.tr_x = bin_rect.tr_x;
-        else
-            temp.tr_x = normal_list[poly].rect.tr_x;
-        if (normal_list[poly].rect.tr_y >= bin_rect.tr_y)
-            temp.tr_y = bin_rect.tr_y;
-        else
-            temp.tr_y = normal_list[poly].rect.tr_y;
+        temp = rect_overlap(normal_list[poly].rect, bin_rect);
         poly_bin_instersect.push_back(temp);
     }
 
@@ -1359,7 +1311,8 @@ void Layout::find_fill_region_y(int layer, int i, int j)
     after_merge_y_list.clear();
 }
 
-// 6/4 Random fill is not needed 
+// 6/4 Update: Random fill is not needed 
+// Will be removed
 void Layout::random_fill(int layer, int i, int j, int x_ratio, int y_ratio)
 {
     int range_x = bin_size / (min_space[layer] * x_ratio);

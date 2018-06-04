@@ -51,3 +51,29 @@ void Rectangle::dump()
          << tr_x << " " 
          << tr_y << endl;
 }
+
+string Rectangle::dump_string()
+{
+    string rect_str;
+
+
+    rect_str = to_string(bl_x) + " " + 
+                to_string(bl_y) + " " + 
+                to_string(tr_x) + " " + 
+                to_string(tr_y);
+
+    return rect_str;
+}
+
+Rectangle rect_overlap(const Rectangle &_r1, const Rectangle &_r2)
+{
+
+    Rectangle r_out;
+    
+    r_out.bl_x = max(_r1.bl_x, _r2.bl_x);
+    r_out.bl_y = max(_r1.bl_y, _r2.bl_y);
+    r_out.tr_x = min(_r1.tr_x, _r2.tr_x);
+    r_out.tr_y = min(_r1.tr_y, _r2.tr_y);
+
+    return r_out;
+}

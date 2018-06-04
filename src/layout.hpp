@@ -11,8 +11,6 @@
 
 using namespace std;
 
-// TODO: calculate distance between two rectangles(DRC)
-
 class Layout{
 public:    
     struct net{

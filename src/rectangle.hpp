@@ -21,13 +21,16 @@ public:
 
     void set_rectangle(int _bl_x, int _bl_y, int _tr_x, int _tr_y);
     void dump();
+    string dump_string();
+
     int area();
 
     friend class Layout;   // class Layout can access private member
     // calculate overlapped area between two rectangles
     friend int area_overlap(const Rectangle &_r1, const Rectangle &_r2);
     friend bool check_space(const Rectangle &_r1, const Rectangle &_r2, int margin);
-    
+    friend Rectangle rect_overlap(const Rectangle &_r1, const Rectangle &_r2); 
+
 private: 
     int bl_x;   // buttom left X
     int bl_y;   // buttom left y
