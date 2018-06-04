@@ -341,77 +341,8 @@ void Layout::metal_fill(int layer, int i, int j)
 }
 
 /***************************************************************/
-/**** 5/29 window-based check                               ****/
-/**** Re-calculate normal and fill areas in each window     ****/
-/**** need to do verification to check if                   ****/
-/**** window-based areas match the areas found in each bin  ****/
-/**** during filling functions                              ****/
-/**** 5/30  fix 5/29 problems ***/
 void Layout::window_based_density_check()
 {
-    // 5/29 version
-    /*
-    cout << "//==== Window based density check ===//" << endl;
-    cout << "window size = " << bin_size * 2 << endl;
-    int range_x = normal_list[0].rect.tr_x / bin_size;
-    int range_y = normal_list[0].rect.tr_y / bin_size;
-    // bin size = window size / 2
-    // step = bin_size
-
-    // metal_area sum up normal and fill area in one window
-    long int metal_area;
-    long int fill_area_sum;
-    long int normal_area_sum;
-    double window_density;
-    int density_check_fail_count = 0;
-    int density_check_pass_count = 0;
-    int density_check_larger_than_max_count = 0;
-    
-    for (int layer = 1; layer <= 9; layer++) // 5/29 modified 
-    {
-        for (int i = 0; i < range_x - 1; i++)
-        {
-            for (int j = 0; j < range_y - 1; j++)
-            { 
-                metal_area = 0;
-                fill_area_sum = 0;
-                normal_area_sum = 0;
-
-                fill_area_sum += grid[layer][i][j].fill_area;
-                fill_area_sum += grid[layer][i + 1][j].fill_area;
-                fill_area_sum += grid[layer][i][j + 1].fill_area;
-                fill_area_sum += grid[layer][i + 1][j + 1].fill_area;
-
-                normal_area_sum += grid[layer][i][j].normal_area;
-                normal_area_sum += grid[layer][i + 1][j].normal_area;
-                normal_area_sum += grid[layer][i][j + 1].normal_area;
-                normal_area_sum += grid[layer][i + 1][j + 1].normal_area;
-
-                metal_area = normal_area_sum + fill_area_sum;
-
-                window_density = ((double)(metal_area) / (double)(bin_size * bin_size * 4));
-                if (window_density < min_density[layer])
-                {
-                    cout << "fail window_density: " << window_density << endl;
-                    density_check_fail_count++;
-                }
-                else
-                {
-                    density_check_pass_count++;
-                    if (window_density > 1)
-                    {
-                        density_check_larger_than_max_count++;
-                    }
-                }
-            }
-        }
-    }
-    cout << "density pass count " << density_check_pass_count << endl;
-    cout << "density fail count " << density_check_fail_count << endl;
-    cout << "density larger than max density count " << density_check_larger_than_max_count << endl;
-    cout << "pass = " << (double)(density_check_pass_count) / double(density_check_pass_count + density_check_fail_count) << endl;
-    */
-
     // 5/30 version
     cout << "//==== Window based density check ===//" << endl;
     cout << "window size = " << bin_size * 2 << endl;
@@ -505,11 +436,7 @@ void Layout::window_based_density_check()
 
                 // Verification: Does area of normal overlapped with window
                 // equal to sum of area of normal in four bins within the window?
-                if (normal_area_bin == normal_area_window)
-                {
-                    //cout << "normal area verification pass" << endl;
-                }
-                else
+                if (normal_area_bin != normal_area_window)
                 {
                     //cout << "normal area verification fail" << endl;
                     normal_area_ver_fail_count++;
@@ -551,15 +478,9 @@ void Layout::window_based_density_check()
 
                 // Verification: Does area of fill overlapped with window
                 // equal to sum of area of fill in four bins within the window?
-                if (fill_area_bin == fill_area_window)
-                {
-                    //cout << "fill area verification pass" << endl;
-                }
-                else
+                if (fill_area_bin != fill_area_window)
                 {
                     //cout << "fill area verification fail" << endl;
-                    //cout << "fill area fail " << layer << " " << i << " " << j << endl;
-                    //cout << "window area = " << fill_area_window << "bin area = " << fill_area_bin;
                     fill_area_ver_fail_count++;
                 }
                 // Check whether window density > min density and window density > max density
@@ -590,9 +511,7 @@ void Layout::window_based_density_check()
     cout << "pass = " << (double)(density_check_pass_count) / double(density_check_pass_count + density_check_fail_count) << endl;
 }
 
-// check min_width, max_fill_width
-/*** 5/29 should modify to window-based test ***/
-/*** 5/30 this block direct test all fill list, Do we need window-based test? ***/
+// check min_width, max_fill_width for all fills in fill_list
 /***********************************************/
 void Layout::DRC_check_width()
 {
@@ -629,12 +548,8 @@ void Layout::DRC_check_width()
     cout << "max fill width check fail " << max_fill_width_fail_count << endl;
     cout << "----------------------------" << endl;
 }
-/***********************************************/
-/***********************************************/
 
 // check min_space btw fill & normal, fill & fill
-/*** 5/29 should modify to window-based test ***/
-/*** 5/30 should modify to window-based test -> finish ***/
 /***********************************************/
 void Layout::DRC_check_space()
 {
@@ -781,8 +696,6 @@ void Layout::DRC_check_space()
     cout << "total fill " << fill_list.size() << endl;
     //dump_fill_list();
 }
-/***********************************************/
-/***********************************************/
 
 void Layout::dump_fill_list()
 {
@@ -912,13 +825,7 @@ void Layout::dump_bin(int layer, int x, int y)
     fill_file.close();
 }
 
-// 6/01 working list
-// modify find_fill_region() into find_fill_region_x() and test
-// modify metal_fill() into metal_fill_x and test()
-// add find_fill_region_x() and metal_fill_y()
-// add random_fill()
-// add merge function in find_init_fill_x() and find_init_fill_y()
-
+// fill insertion algorition, use find fill region and metal fill
 void Layout::fill_insertion()
 {
     int range_x = normal_list[0].rect.tr_x / bin_size;
@@ -1015,22 +922,6 @@ void Layout::find_fill_region_x(int layer, int i, int j)
         poly_bin_instersect.push_back(temp);
     }
 
-    // dump poly_bin intersect
-    /*
-                if (layer == 2 && i == 50 && j == 50)
-                {
-                    cout << "dump poly_bin intersect" << endl;
-                    for (auto v : poly_bin_instersect)
-                    {
-                        cout << v.bl_x << " "
-                             << v.bl_y << " "
-                             << v.tr_x << " "
-                             << v.tr_y << endl;
-                    }
-                    cout << "-----------------------" << endl;
-                }
-                */
-
     // store x point in intersect_x
     for (auto x : poly_bin_instersect)
     {
@@ -1099,22 +990,6 @@ void Layout::find_fill_region_x(int layer, int i, int j)
         sort(intersect_y.begin(), intersect_y.end());
         intersect_y.erase(unique(intersect_y.begin(), intersect_y.end()), intersect_y.end());
 
-        // dump intersect x y
-        /*
-                    if (layer == 2 && i == 50 && j == 50)
-                    {
-                        cout << "intersect x size = " << intersect_x.size()
-                             << " intersect y size = " << intersect_y.size() << endl;
-                        cout << "intersect x = " << intersect_x[in_x] << " " << intersect_x[in_x + 1] << endl;
-                        cout << "intersect y = ";
-                        for (auto v : intersect_y)
-                        {
-                            cout << v << " ";
-                        }
-                        cout << endl;
-                    }
-                    */
-
         for (int in_y = 0; in_y < intersect_y.size() - 1; in_y++)
         {
             not_poly = 1;
@@ -1153,15 +1028,6 @@ void Layout::find_fill_region_x(int layer, int i, int j)
                 temp.bl_y = intersect_y[in_y];
                 temp.tr_x = intersect_x[in_x + 1];
                 temp.tr_y = intersect_y[in_y + 1];
-
-                // dump for debug
-                /*
-                            if (layer == 2 && i == 50 && j == 50)
-                            {
-                                //cout << "dump init fill region for debug" << endl;
-                                net_temp.rect.dump();
-                            }
-                            */
 
                 //init_fill_list.push_back(net_temp);
                 no_merge_list.push_back(temp);
@@ -1312,22 +1178,6 @@ void Layout::find_fill_region_y(int layer, int i, int j)
         poly_bin_instersect.push_back(temp);
     }
 
-    // dump poly_bin intersect
-    /*
-                if (layer == 2 && i == 50 && j == 50)
-                {
-                    cout << "dump poly_bin intersect" << endl;
-                    for (auto v : poly_bin_instersect)
-                    {
-                        cout << v.bl_x << " "
-                             << v.bl_y << " "
-                             << v.tr_x << " "
-                             << v.tr_y << endl;
-                    }
-                    cout << "-----------------------" << endl;
-                }
-                */
-
     // store y point in intersect_y
     for (auto y : poly_bin_instersect)
     {
@@ -1396,22 +1246,6 @@ void Layout::find_fill_region_y(int layer, int i, int j)
         sort(intersect_x.begin(), intersect_x.end());
         intersect_x.erase(unique(intersect_x.begin(), intersect_x.end()), intersect_x.end());
 
-        // dump intersect x y
-        /*
-                    if (layer == 2 && i == 50 && j == 50)
-                    {
-                        cout << "intersect x size = " << intersect_x.size()
-                             << " intersect y size = " << intersect_y.size() << endl;
-                        cout << "intersect x = " << intersect_x[in_x] << " " << intersect_x[in_x + 1] << endl;
-                        cout << "intersect y = ";
-                        for (auto v : intersect_y)
-                        {
-                            cout << v << " ";
-                        }
-                        cout << endl;
-                    }
-                    */
-
         for (int in_x = 0; in_x < intersect_x.size() - 1; in_x++)
         {
             not_poly = 1;
@@ -1451,20 +1285,7 @@ void Layout::find_fill_region_y(int layer, int i, int j)
                 temp.tr_x = intersect_x[in_x + 1];
                 temp.tr_y = intersect_y[in_y + 1];
 
-                // dump for debug
-                /*
-                            if (layer == 2 && i == 50 && j == 50)
-                            {
-                                //cout << "dump init fill region for debug" << endl;
-                                net_temp.rect.dump();
-                            }
-                            */
-
-                //init_fill_list.push_back(net_temp);
                 no_merge_list.push_back(temp);
-                //grid[layer][i][j].init_fill->push_back(init_fill_count);
-                //init_fill_count++;
-                //cout << "init _fill count" << init_fill_count << endl;
             }
         }
         intersect_x.clear();
@@ -1542,11 +1363,6 @@ void Layout::find_fill_region_y(int layer, int i, int j)
             // push merge rectangle into init_fill_list
             for (int d = 0; d < after_merge_y_list.size() - 1; d += 2)
             {
-                //cout << "hihi 2" << endl;
-                //net_temp.rect.bl_x = after_merge_x_list[d];
-                //net_temp.rect.tr_x = after_merge_x_list[d+1];
-                //net_temp.rect.bl_y = no_merge_list[c].bl_y;
-                //net_temp.rect.tr_y = no_merge_list[c].tr_y;
                 net_temp.rect.bl_x = no_merge_list[c].bl_x;
                 net_temp.rect.tr_x = no_merge_list[c].tr_x;
                 net_temp.rect.bl_y = after_merge_y_list[d];
@@ -1566,6 +1382,7 @@ void Layout::find_fill_region_y(int layer, int i, int j)
     after_merge_y_list.clear();
 }
 
+// Random fill is not needed 
 void Layout::random_fill(int layer, int i, int j, int x_ratio, int y_ratio)
 {
     int range_x = bin_size / (min_space[layer] * x_ratio);
