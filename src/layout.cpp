@@ -187,302 +187,6 @@ void Layout::set_min_space(int layer, int space)
 }
 /***********************************/
 
-void Layout::find_fill_region_x(int layer, int i, int j)
-{
-    Rectangle temp;
-    net net_temp;
-    Rectangle bin_rect;
-
-    vector<Rectangle> poly_bin_instersect;
-    poly_bin_instersect.reserve(10);
-
-    vector<int> intersect_x;
-    vector<int> intersect_y;
-    intersect_x.reserve(10);
-    intersect_y.reserve(10);
-
-    bool not_poly;
-
-    vector<Rectangle> no_merge_list;
-
-    poly_bin_instersect.clear();
-    intersect_x.clear();
-    intersect_y.clear();
-    no_merge_list.clear();
-    bin_rect.set_rectangle(i * bin_size, j * bin_size, (i + 1) * bin_size, (j + 1) * bin_size);
-
-    //cout << "***** (" << layer << " " << i << " " << j << " "
-    //     << ")******" << endl;
-
-    //cout << "//=== find intersection of bin and poly ===// " << endl;
-    for (auto poly : *(grid[layer][i][j].normal))
-    {
-        if (normal_list[poly].rect.bl_x >= bin_rect.bl_x)
-            temp.bl_x = normal_list[poly].rect.bl_x;
-        else
-            temp.bl_x = bin_rect.bl_x;
-        if (normal_list[poly].rect.bl_y >= bin_rect.bl_y)
-            temp.bl_y = normal_list[poly].rect.bl_y;
-        else
-            temp.bl_y = bin_rect.bl_y;
-        if (normal_list[poly].rect.tr_x >= bin_rect.tr_x)
-            temp.tr_x = bin_rect.tr_x;
-        else
-            temp.tr_x = normal_list[poly].rect.tr_x;
-        if (normal_list[poly].rect.tr_y >= bin_rect.tr_y)
-            temp.tr_y = bin_rect.tr_y;
-        else
-            temp.tr_y = normal_list[poly].rect.tr_y;
-        poly_bin_instersect.push_back(temp);
-    }
-
-    // dump poly_bin intersect
-    /*
-                if (layer == 2 && i == 50 && j == 50)
-                {
-                    cout << "dump poly_bin intersect" << endl;
-                    for (auto v : poly_bin_instersect)
-                    {
-                        cout << v.bl_x << " "
-                             << v.bl_y << " "
-                             << v.tr_x << " "
-                             << v.tr_y << endl;
-                    }
-                    cout << "-----------------------" << endl;
-                }
-                */
-
-    // store x point in intersect_x
-    for (auto x : poly_bin_instersect)
-    {
-        intersect_x.push_back(x.bl_x);
-        intersect_x.push_back(x.tr_x);
-    }
-
-    // add bin boundary as intersection point
-    // when no normal in bin
-    if (intersect_x.size() == 0)
-    {
-        intersect_x.push_back(bin_rect.bl_x);
-        intersect_x.push_back(bin_rect.tr_x);
-    }
-
-    // add bin boundary as intersection
-    // when normal did not overlap with bin boundary
-    else
-    {
-        if (intersect_x[0] > bin_rect.bl_x)
-            intersect_x.insert(intersect_x.begin(), bin_rect.bl_x);
-        if (intersect_x.back() < bin_rect.tr_x)
-            intersect_x.push_back(bin_rect.tr_x);
-    }
-
-    // sort and erase duplicate x
-    sort(intersect_x.begin(), intersect_x.end());
-    intersect_x.erase(unique(intersect_x.begin(), intersect_x.end()), intersect_x.end());
-
-    //cout << "//=== Set initialize fill region ===// " << endl;
-    net_temp.net_id = 0;
-    net_temp.layer = layer;
-
-    for (int in_x = 0; in_x < intersect_x.size() - 1; in_x++)
-    {
-        // Given x , find intersection point y
-        for (auto v : poly_bin_instersect)
-        {
-            // find poly intersect with line x = intersect[in_x] and x = intersect[in_x+1]
-            // add y to intersecty when line x = intersect_x cross normal
-            if ((intersect_x[in_x] >= v.bl_x && intersect_x[in_x] <= v.tr_x) ||
-                (intersect_x[in_x + 1] >= v.bl_x && intersect_x[in_x + 1] <= v.tr_x))
-            {
-                // store intersection y point
-                intersect_y.push_back(v.tr_y);
-                intersect_y.push_back(v.bl_y);
-            }
-        }
-
-        // if no poly in this region, set bin as intersection point
-        if (intersect_y.size() == 0)
-        {
-            intersect_y.push_back(bin_rect.tr_y);
-            intersect_y.push_back(bin_rect.bl_y);
-        }
-        // add bin boundary as intersection
-        // when normal did not overlap with bin boundary
-        else
-        {
-            if (intersect_y[0] > bin_rect.bl_y)
-                intersect_y.insert(intersect_y.begin(), bin_rect.bl_y);
-            if (intersect_y.back() < bin_rect.tr_y)
-                intersect_y.push_back(bin_rect.tr_y);
-        }
-        // sort and erase duplicate y
-        sort(intersect_y.begin(), intersect_y.end());
-        intersect_y.erase(unique(intersect_y.begin(), intersect_y.end()), intersect_y.end());
-
-        // dump intersect x y
-        /*
-                    if (layer == 2 && i == 50 && j == 50)
-                    {
-                        cout << "intersect x size = " << intersect_x.size()
-                             << " intersect y size = " << intersect_y.size() << endl;
-                        cout << "intersect x = " << intersect_x[in_x] << " " << intersect_x[in_x + 1] << endl;
-                        cout << "intersect y = ";
-                        for (auto v : intersect_y)
-                        {
-                            cout << v << " ";
-                        }
-                        cout << endl;
-                    }
-                    */
-
-        for (int in_y = 0; in_y < intersect_y.size() - 1; in_y++)
-        {
-            not_poly = 1;
-            // for intersection points, filter out normal poly
-            for (auto v : poly_bin_instersect)
-            {
-                if ((intersect_x[in_x] >= v.bl_x && intersect_x[in_x] <= v.tr_x) &&
-                    (intersect_x[in_x + 1] >= v.bl_x && intersect_x[in_x + 1] <= v.tr_x))
-                {
-                    // intersection point = normal bl and tr
-                    if ((intersect_y[in_y] == v.bl_y) && (intersect_y[in_y + 1] == v.tr_y))
-                    {
-                        not_poly = 0;
-                        //cout << "intersection point = normal bl and tr " << endl;
-                    }
-
-                    // intersection in normal poly, filter out overlap normal poly
-                    if ((intersect_y[in_y] > v.bl_y) && (intersect_y[in_y] < v.tr_y))
-                    {
-                        not_poly = 0;
-                        //cout << " y intersection in normal poly, filter out overlap normal poly" << endl;
-                    }
-
-                    // intersection in normal poly, filter out overlap normal poly
-                    if ((intersect_y[in_y + 1] > v.bl_y) && (intersect_y[in_y + 1] < v.tr_y))
-                    {
-                        not_poly = 0;
-                        //cout << "y + 1 intersection in normal poly, filter out overlap normal poly" << endl;
-                    }
-                }
-            }
-
-            if (not_poly)
-            {
-                temp.bl_x = intersect_x[in_x];
-                temp.bl_y = intersect_y[in_y];
-                temp.tr_x = intersect_x[in_x + 1];
-                temp.tr_y = intersect_y[in_y + 1];
-
-                // dump for debug
-                /*
-                            if (layer == 2 && i == 50 && j == 50)
-                            {
-                                //cout << "dump init fill region for debug" << endl;
-                                net_temp.rect.dump();
-                            }
-                            */
-
-                //init_fill_list.push_back(net_temp);
-                no_merge_list.push_back(temp);
-                //grid[layer][i][j].init_fill->push_back(init_fill_count);
-                //init_fill_count++;
-            }
-        }
-        intersect_y.clear();
-    }
-
-    // merge init_fill_list based on x
-
-    vector<bool> not_merge;
-    // for each retangle in no_merge_list, not_merge = 1
-    for (int c = 0; c < no_merge_list.size(); c++)
-    {
-        not_merge.push_back(1);
-    }
-
-    // Given bl_y and tr_y, store all x with the same bl_y and tr_y
-    // so that we can merge later
-    vector<int> before_merge_x_list;
-    vector<int> after_merge_x_list;
-    vector<Rectangle> merge_x_rect_list;
-    net_temp.net_id = 0;
-    net_temp.layer = layer;
-
-    for (int c = 0; c < no_merge_list.size(); c++)
-    {
-        // if this rectangle did not merge yet
-        before_merge_x_list.clear();
-        after_merge_x_list.clear();
-
-        if (not_merge[c])
-        {
-            // set not_merge[c] = 0
-            not_merge[c] = 0;
-
-            before_merge_x_list.push_back(no_merge_list[c].bl_x);
-            before_merge_x_list.push_back(no_merge_list[c].tr_x);
-
-            // find rectangle with the same bl_y and t_y
-            for (int d = c + 1; d < no_merge_list.size(); d++)
-            {
-                // if no_merge_list[d] and no_merge_list[c] have same bl_y and tr_y
-                if ((no_merge_list[d].bl_y == no_merge_list[c].bl_y) &&
-                    (no_merge_list[d].tr_y == no_merge_list[c].tr_y))
-                {
-                    // set not_merge[d] = 0
-                    not_merge[d] = 0;
-
-                    // add x point into merge_x_list to merge later
-                    before_merge_x_list.push_back(no_merge_list[d].bl_x);
-                    before_merge_x_list.push_back(no_merge_list[d].tr_x);
-                }
-            }
-
-            // for no_merge_list[c], merge with other rect that has same y
-            // merge x point
-            sort(before_merge_x_list.begin(), before_merge_x_list.end());
-
-            for (int d = 0; d < before_merge_x_list.size() - 1;)
-            {
-                //cout << "hihi 1" << endl;
-                // if not duplicate, push into after_merge_x_list
-                if (before_merge_x_list[d] != before_merge_x_list[d + 1])
-                {
-                    after_merge_x_list.push_back(before_merge_x_list[d]);
-                    d++;
-                }
-                // if before_merge_x_list[d] == before_merge_x_list[d+1], skip this two points
-                else
-                {
-                    d += 2;
-                }
-            }
-            // add last element into afte_merge_list
-            after_merge_x_list.push_back(before_merge_x_list.back());
-
-            // push merge rectangle into init_fill_list
-            for (int d = 0; d < after_merge_x_list.size() - 1; d += 2)
-            {              
-                net_temp.rect.bl_x = after_merge_x_list[d];
-                net_temp.rect.tr_x = after_merge_x_list[d + 1];
-                net_temp.rect.bl_y = no_merge_list[c].bl_y;
-                net_temp.rect.tr_y = no_merge_list[c].tr_y;
-                init_fill_list.push_back(net_temp);
-                grid[layer][i][j].init_fill->push_back(init_fill_count);
-                init_fill_count++;
-                
-            }
-        }
-    }
-    poly_bin_instersect.clear();
-    intersect_x.clear();
-    intersect_y.clear();
-    no_merge_list.clear();
-    before_merge_x_list.clear();
-    after_merge_x_list.clear();
-}
 
 void Layout::metal_fill(int layer, int i, int j)
 {
@@ -1240,17 +944,327 @@ void Layout::fill_insertion()
                 }
                 metal_fill(layer, i, j);
                 // 3,3 is minimum requirement for not violate DRC
-                random_fill(layer, i, j, 3, 3);
+                //random_fill(layer, i, j, 3, 3);
+
+                double density = ((double)grid[layer][i][j].normal_area +
+                                    (double)grid[layer][i][j].fill_area) /
+                                    (bin_size * bin_size);
+
+                if (density <= 0.4)
+                     cout << layer << " " << i << " " << j << ": " << density << endl;
+
+                /*
                 if (layer == 9 && (i == 8 || i == 9) && (j == 102 || j == 103 || j == 104 || j == 105))
                 {
                     cout << layer << " " << i << " " << j << " random count: " << random_fill_count << endl;
                 }
+                */
 
                 // add random fill to improve density for all pin
             }
         }
     }
 }
+
+void Layout::find_fill_region_x(int layer, int i, int j)
+{
+    Rectangle temp;
+    net net_temp;
+    Rectangle bin_rect;
+
+    vector<Rectangle> poly_bin_instersect;
+    poly_bin_instersect.reserve(10);
+
+    vector<int> intersect_x;
+    vector<int> intersect_y;
+    intersect_x.reserve(10);
+    intersect_y.reserve(10);
+
+    bool not_poly;
+
+    vector<Rectangle> no_merge_list;
+
+    poly_bin_instersect.clear();
+    intersect_x.clear();
+    intersect_y.clear();
+    no_merge_list.clear();
+    bin_rect.set_rectangle(i * bin_size, j * bin_size, (i + 1) * bin_size, (j + 1) * bin_size);
+
+    //cout << "***** (" << layer << " " << i << " " << j << " "
+    //     << ")******" << endl;
+
+    //cout << "//=== find intersection of bin and poly ===// " << endl;
+    for (auto poly : *(grid[layer][i][j].normal))
+    {
+        if (normal_list[poly].rect.bl_x >= bin_rect.bl_x)
+            temp.bl_x = normal_list[poly].rect.bl_x;
+        else
+            temp.bl_x = bin_rect.bl_x;
+        if (normal_list[poly].rect.bl_y >= bin_rect.bl_y)
+            temp.bl_y = normal_list[poly].rect.bl_y;
+        else
+            temp.bl_y = bin_rect.bl_y;
+        if (normal_list[poly].rect.tr_x >= bin_rect.tr_x)
+            temp.tr_x = bin_rect.tr_x;
+        else
+            temp.tr_x = normal_list[poly].rect.tr_x;
+        if (normal_list[poly].rect.tr_y >= bin_rect.tr_y)
+            temp.tr_y = bin_rect.tr_y;
+        else
+            temp.tr_y = normal_list[poly].rect.tr_y;
+        poly_bin_instersect.push_back(temp);
+    }
+
+    // dump poly_bin intersect
+    /*
+                if (layer == 2 && i == 50 && j == 50)
+                {
+                    cout << "dump poly_bin intersect" << endl;
+                    for (auto v : poly_bin_instersect)
+                    {
+                        cout << v.bl_x << " "
+                             << v.bl_y << " "
+                             << v.tr_x << " "
+                             << v.tr_y << endl;
+                    }
+                    cout << "-----------------------" << endl;
+                }
+                */
+
+    // store x point in intersect_x
+    for (auto x : poly_bin_instersect)
+    {
+        intersect_x.push_back(x.bl_x);
+        intersect_x.push_back(x.tr_x);
+    }
+
+    // add bin boundary as intersection point
+    // when no normal in bin
+    if (intersect_x.size() == 0)
+    {
+        intersect_x.push_back(bin_rect.bl_x);
+        intersect_x.push_back(bin_rect.tr_x);
+    }
+
+    // add bin boundary as intersection
+    // when normal did not overlap with bin boundary
+    else
+    {
+        if (intersect_x[0] > bin_rect.bl_x)
+            intersect_x.insert(intersect_x.begin(), bin_rect.bl_x);
+        if (intersect_x.back() < bin_rect.tr_x)
+            intersect_x.push_back(bin_rect.tr_x);
+    }
+
+    // sort and erase duplicate x
+    sort(intersect_x.begin(), intersect_x.end());
+    intersect_x.erase(unique(intersect_x.begin(), intersect_x.end()), intersect_x.end());
+
+    //cout << "//=== Set initialize fill region ===// " << endl;
+    net_temp.net_id = 0;
+    net_temp.layer = layer;
+
+    for (int in_x = 0; in_x < intersect_x.size() - 1; in_x++)
+    {
+        // Given x , find intersection point y
+        for (auto v : poly_bin_instersect)
+        {
+            // find poly intersect with line x = intersect[in_x] and x = intersect[in_x+1]
+            // add y to intersecty when line x = intersect_x cross normal
+            if ((intersect_x[in_x] >= v.bl_x && intersect_x[in_x] <= v.tr_x) ||
+                (intersect_x[in_x + 1] >= v.bl_x && intersect_x[in_x + 1] <= v.tr_x))
+            {
+                // store intersection y point
+                intersect_y.push_back(v.tr_y);
+                intersect_y.push_back(v.bl_y);
+            }
+        }
+
+        // if no poly in this region, set bin as intersection point
+        if (intersect_y.size() == 0)
+        {
+            intersect_y.push_back(bin_rect.tr_y);
+            intersect_y.push_back(bin_rect.bl_y);
+        }
+        // add bin boundary as intersection
+        // when normal did not overlap with bin boundary
+        else
+        {
+            if (intersect_y[0] > bin_rect.bl_y)
+                intersect_y.insert(intersect_y.begin(), bin_rect.bl_y);
+            if (intersect_y.back() < bin_rect.tr_y)
+                intersect_y.push_back(bin_rect.tr_y);
+        }
+        // sort and erase duplicate y
+        sort(intersect_y.begin(), intersect_y.end());
+        intersect_y.erase(unique(intersect_y.begin(), intersect_y.end()), intersect_y.end());
+
+        // dump intersect x y
+        /*
+                    if (layer == 2 && i == 50 && j == 50)
+                    {
+                        cout << "intersect x size = " << intersect_x.size()
+                             << " intersect y size = " << intersect_y.size() << endl;
+                        cout << "intersect x = " << intersect_x[in_x] << " " << intersect_x[in_x + 1] << endl;
+                        cout << "intersect y = ";
+                        for (auto v : intersect_y)
+                        {
+                            cout << v << " ";
+                        }
+                        cout << endl;
+                    }
+                    */
+
+        for (int in_y = 0; in_y < intersect_y.size() - 1; in_y++)
+        {
+            not_poly = 1;
+            // for intersection points, filter out normal poly
+            for (auto v : poly_bin_instersect)
+            {
+                if ((intersect_x[in_x] >= v.bl_x && intersect_x[in_x] <= v.tr_x) &&
+                    (intersect_x[in_x + 1] >= v.bl_x && intersect_x[in_x + 1] <= v.tr_x))
+                {
+                    // intersection point = normal bl and tr
+                    if ((intersect_y[in_y] == v.bl_y) && (intersect_y[in_y + 1] == v.tr_y))
+                    {
+                        not_poly = 0;
+                        //cout << "intersection point = normal bl and tr " << endl;
+                    }
+
+                    // intersection in normal poly, filter out overlap normal poly
+                    if ((intersect_y[in_y] > v.bl_y) && (intersect_y[in_y] < v.tr_y))
+                    {
+                        not_poly = 0;
+                        //cout << " y intersection in normal poly, filter out overlap normal poly" << endl;
+                    }
+
+                    // intersection in normal poly, filter out overlap normal poly
+                    if ((intersect_y[in_y + 1] > v.bl_y) && (intersect_y[in_y + 1] < v.tr_y))
+                    {
+                        not_poly = 0;
+                        //cout << "y + 1 intersection in normal poly, filter out overlap normal poly" << endl;
+                    }
+                }
+            }
+
+            if (not_poly)
+            {
+                temp.bl_x = intersect_x[in_x];
+                temp.bl_y = intersect_y[in_y];
+                temp.tr_x = intersect_x[in_x + 1];
+                temp.tr_y = intersect_y[in_y + 1];
+
+                // dump for debug
+                /*
+                            if (layer == 2 && i == 50 && j == 50)
+                            {
+                                //cout << "dump init fill region for debug" << endl;
+                                net_temp.rect.dump();
+                            }
+                            */
+
+                //init_fill_list.push_back(net_temp);
+                no_merge_list.push_back(temp);
+                //grid[layer][i][j].init_fill->push_back(init_fill_count);
+                //init_fill_count++;
+            }
+        }
+        intersect_y.clear();
+    }
+
+    // merge init_fill_list based on x
+
+    vector<bool> not_merge;
+    // for each retangle in no_merge_list, not_merge = 1
+    for (int c = 0; c < no_merge_list.size(); c++)
+    {
+        not_merge.push_back(1);
+    }
+
+    // Given bl_y and tr_y, store all x with the same bl_y and tr_y
+    // so that we can merge later
+    vector<int> before_merge_x_list;
+    vector<int> after_merge_x_list;
+    vector<Rectangle> merge_x_rect_list;
+    net_temp.net_id = 0;
+    net_temp.layer = layer;
+
+    for (int c = 0; c < no_merge_list.size(); c++)
+    {
+        // if this rectangle did not merge yet
+        before_merge_x_list.clear();
+        after_merge_x_list.clear();
+
+        if (not_merge[c])
+        {
+            // set not_merge[c] = 0
+            not_merge[c] = 0;
+
+            before_merge_x_list.push_back(no_merge_list[c].bl_x);
+            before_merge_x_list.push_back(no_merge_list[c].tr_x);
+
+            // find rectangle with the same bl_y and t_y
+            for (int d = c + 1; d < no_merge_list.size(); d++)
+            {
+                // if no_merge_list[d] and no_merge_list[c] have same bl_y and tr_y
+                if ((no_merge_list[d].bl_y == no_merge_list[c].bl_y) &&
+                    (no_merge_list[d].tr_y == no_merge_list[c].tr_y))
+                {
+                    // set not_merge[d] = 0
+                    not_merge[d] = 0;
+
+                    // add x point into merge_x_list to merge later
+                    before_merge_x_list.push_back(no_merge_list[d].bl_x);
+                    before_merge_x_list.push_back(no_merge_list[d].tr_x);
+                }
+            }
+
+            // for no_merge_list[c], merge with other rect that has same y
+            // merge x point
+            sort(before_merge_x_list.begin(), before_merge_x_list.end());
+
+            for (int d = 0; d < before_merge_x_list.size() - 1;)
+            {
+                //cout << "hihi 1" << endl;
+                // if not duplicate, push into after_merge_x_list
+                if (before_merge_x_list[d] != before_merge_x_list[d + 1])
+                {
+                    after_merge_x_list.push_back(before_merge_x_list[d]);
+                    d++;
+                }
+                // if before_merge_x_list[d] == before_merge_x_list[d+1], skip this two points
+                else
+                {
+                    d += 2;
+                }
+            }
+            // add last element into afte_merge_list
+            after_merge_x_list.push_back(before_merge_x_list.back());
+
+            // push merge rectangle into init_fill_list
+            for (int d = 0; d < after_merge_x_list.size() - 1; d += 2)
+            {              
+                net_temp.rect.bl_x = after_merge_x_list[d];
+                net_temp.rect.tr_x = after_merge_x_list[d + 1];
+                net_temp.rect.bl_y = no_merge_list[c].bl_y;
+                net_temp.rect.tr_y = no_merge_list[c].tr_y;
+                init_fill_list.push_back(net_temp);
+                grid[layer][i][j].init_fill->push_back(init_fill_count);
+                init_fill_count++;
+                
+            }
+        }
+    }
+    poly_bin_instersect.clear();
+    intersect_x.clear();
+    intersect_y.clear();
+    no_merge_list.clear();
+    before_merge_x_list.clear();
+    after_merge_x_list.clear();
+}
+
+
+
 
 void Layout::find_fill_region_y(int layer, int i, int j)
 {
