@@ -198,154 +198,6 @@ void Layout::set_rules(const vector<rule>& _rules)
     }
 }
 
-void Layout::metal_fill(int layer, int i, int j)
-{
-
-    Rectangle temp;
-    net net_temp;
-
-    double normal_density; // normal metal density
-    double curr_density; // current bin density
-    bool no_more_fill_region;
-    int fill_region_used_count;
-    int fill_index;
-    int fill_width, fill_length;
-    int fill_width_ratio, fill_length_ratio;
-
-    vector<int> fill_bl_x;  fill_bl_x.reserve(20);
-    vector<int> fill_bl_y;  fill_bl_y.reserve(20);
-    vector<int> fill_tr_x;  fill_tr_x.reserve(20);
-    vector<int> fill_tr_y;  fill_tr_y.reserve(20);
-
-    int area_temp;
-    int density_pass_count = 0;
-    int density_fail_count = 0;
-    int no_fill_count = 0;
-    int fill_area_sum;
-
-    int width_left, length_left;
-
-    // Calculate dennsity
-    bin_normal_area(layer, i, j);
-    normal_density = (double)(grid[layer][i][j].normal_area / (double)(bin_size * bin_size));
-
-    // Start fill insertion
-    curr_density = normal_density;
-    fill_region_used_count = 1;
-    net_temp.layer = layer;
-    net_temp.net_id = 0;
-    fill_area_sum = 0;
-    //while (curr_density <= min_density[layer] && (!no_more_fill_region)) 5/29
-
-    no_more_fill_region = (fill_region_used_count > grid[layer][i][j].init_fill->size());
-    while (!no_more_fill_region)
-    {
-        fill_bl_x.clear();
-        fill_bl_y.clear();
-        fill_tr_x.clear();
-        fill_tr_y.clear();
-        fill_index = grid[layer][i][j].init_fill->at(fill_region_used_count - 1);
-
-        // for init fill region, shrink min_space
-        temp.bl_x = init_fill_list[fill_index].rect.bl_x + min_space[layer];
-        temp.bl_y = init_fill_list[fill_index].rect.bl_y + min_space[layer];
-        temp.tr_x = init_fill_list[fill_index].rect.tr_x - min_space[layer];
-        temp.tr_y = init_fill_list[fill_index].rect.tr_y - min_space[layer];
-        fill_width = temp.tr_x - temp.bl_x;
-        fill_length = temp.tr_y - temp.bl_y;
-        fill_width_ratio = fill_width / max_fill_width[layer];
-        fill_length_ratio = fill_length / max_fill_width[layer];
-
-        //cout << "fill_w " << fill_width << " fill_L = " << fill_length << endl;
-        // if width and length both larger than min_width, start fill
-        if (fill_width >= min_width[layer] && fill_length >= min_width[layer])
-        {
-            // if width ratio > 0, means width > max_width, cut width into 1300-130 = 1170
-            if (fill_width_ratio > 0)
-            {
-                for (int a = 0; a < fill_width_ratio; a++)
-                {
-                    fill_bl_x.push_back(temp.bl_x + (a * max_fill_width[layer]));
-                    fill_tr_x.push_back(temp.bl_x + (a * max_fill_width[layer]) + max_fill_width[layer] - min_space[layer]);
-                }
-
-                width_left = temp.tr_x - (temp.bl_x + (fill_width_ratio * max_fill_width[layer]));
-                if (width_left > min_width[layer])
-                {
-                    fill_bl_x.push_back(temp.bl_x + (fill_width_ratio * max_fill_width[layer]));
-                    fill_tr_x.push_back(temp.tr_x);
-                    fill_width_ratio++; // use as loop index later
-                }
-            }
-            else
-            {
-                fill_bl_x.push_back(temp.bl_x);
-                fill_tr_x.push_back(temp.tr_x);
-                fill_width_ratio = 1; // for loop used
-            }
-
-            // if length ratio > 0, means length > max_width, cut length into 1300-130 = 1170
-            if (fill_length_ratio > 0)
-            {
-                for (int a = 0; a < fill_length_ratio; a++)
-                {
-                    fill_bl_y.push_back(temp.bl_y + (a * max_fill_width[layer]));
-                    fill_tr_y.push_back(temp.bl_y + (a * max_fill_width[layer]) + max_fill_width[layer] - min_space[layer]);
-                }
-                length_left = temp.tr_y - (temp.bl_y + (fill_length_ratio * max_fill_width[layer]));
-                if (length_left > min_width[layer])
-                {
-                    fill_bl_y.push_back(temp.bl_y + (fill_length_ratio * max_fill_width[layer]));
-                    fill_tr_y.push_back(temp.tr_y);
-                    fill_length_ratio++; // use as loop index later
-                }
-            }
-            else
-            {
-                fill_bl_y.push_back(temp.bl_y);
-                fill_tr_y.push_back(temp.tr_y);
-                fill_length_ratio = 1; // for loop used
-            }
-
-            //push fill to fill_list and update density
-            for (int a = 0; a < fill_width_ratio; a++)
-            {
-                for (int b = 0; b < fill_length_ratio; b++)
-                {
-                    net_temp.rect.set_rectangle(fill_bl_x[a], fill_bl_y[b],
-                                                fill_tr_x[a], fill_tr_y[b]);
-                    fill_list.push_back(net_temp);
-                    area_temp = net_temp.rect.area();
-                    fill_area_sum += area_temp;
-                    grid[layer][i][j].fill->push_back(metal_fill_count);
-                    metal_fill_count++;
-                }
-            }
-        }
-        fill_region_used_count++;
-        no_more_fill_region = (fill_region_used_count > grid[layer][i][j].init_fill->size());
-    }
-
-    curr_density += ((double)fill_area_sum / (double)(bin_size * bin_size));
-    grid[layer][i][j].fill_area = fill_area_sum;
-    // run time density check
-
-    if (curr_density < min_density[layer])
-    {
-        //cout << "fail ";
-        //cout << "Fail: " << layer << " " << i << " " << j << " " << endl;
-        //cout << " total density " << curr_density << " " << endl;
-        if (curr_density == normal_density)
-        {
-            //cout << "Fail: " << layer << " " << i << " " << j << " " << endl;
-            //cout << "no fill, poly density = " << normal_density << endl;
-        }
-        else
-        {
-            //cout << endl;
-        }
-    }
-}
 
 /***************************************************************/
 // window_based_density_check also check if metal fill or normal fill is zero
@@ -853,6 +705,157 @@ void Layout::fill_insertion()
         }
     }
 }
+
+
+void Layout::metal_fill(int layer, int i, int j)
+{
+
+    Rectangle temp;
+    net net_temp;
+
+    double normal_density; // normal metal density
+    double curr_density; // current bin density
+    bool no_more_fill_region;
+    int fill_region_used_count;
+    int fill_index;
+    int fill_width, fill_length;
+    int fill_width_ratio, fill_length_ratio;
+
+    vector<int> fill_bl_x;  fill_bl_x.reserve(20);
+    vector<int> fill_bl_y;  fill_bl_y.reserve(20);
+    vector<int> fill_tr_x;  fill_tr_x.reserve(20);
+    vector<int> fill_tr_y;  fill_tr_y.reserve(20);
+
+    int area_temp;
+    int density_pass_count = 0;
+    int density_fail_count = 0;
+    int no_fill_count = 0;
+    int fill_area_sum;
+
+    int width_left, length_left;
+
+    // Calculate dennsity
+    bin_normal_area(layer, i, j);
+    normal_density = (double)(grid[layer][i][j].normal_area / (double)(bin_size * bin_size));
+
+    // Start fill insertion
+    curr_density = normal_density;
+    fill_region_used_count = 1;
+    net_temp.layer = layer;
+    net_temp.net_id = 0;
+    fill_area_sum = 0;
+    //while (curr_density <= min_density[layer] && (!no_more_fill_region)) 5/29
+
+    no_more_fill_region = (fill_region_used_count > grid[layer][i][j].init_fill->size());
+    while (!no_more_fill_region)
+    {
+        fill_bl_x.clear();
+        fill_bl_y.clear();
+        fill_tr_x.clear();
+        fill_tr_y.clear();
+        fill_index = grid[layer][i][j].init_fill->at(fill_region_used_count - 1);
+
+        // for init fill region, shrink min_space
+        temp.bl_x = init_fill_list[fill_index].rect.bl_x + min_space[layer];
+        temp.bl_y = init_fill_list[fill_index].rect.bl_y + min_space[layer];
+        temp.tr_x = init_fill_list[fill_index].rect.tr_x - min_space[layer];
+        temp.tr_y = init_fill_list[fill_index].rect.tr_y - min_space[layer];
+        fill_width = temp.tr_x - temp.bl_x;
+        fill_length = temp.tr_y - temp.bl_y;
+        fill_width_ratio = fill_width / max_fill_width[layer];
+        fill_length_ratio = fill_length / max_fill_width[layer];
+
+        //cout << "fill_w " << fill_width << " fill_L = " << fill_length << endl;
+        // if width and length both larger than min_width, start fill
+        if (fill_width >= min_width[layer] && fill_length >= min_width[layer])
+        {
+            // if width ratio > 0, means width > max_width, cut width into 1300-130 = 1170
+            if (fill_width_ratio > 0)
+            {
+                for (int a = 0; a < fill_width_ratio; a++)
+                {
+                    fill_bl_x.push_back(temp.bl_x + (a * max_fill_width[layer]));
+                    fill_tr_x.push_back(temp.bl_x + (a * max_fill_width[layer]) + max_fill_width[layer] - min_space[layer]);
+                }
+
+                width_left = temp.tr_x - (temp.bl_x + (fill_width_ratio * max_fill_width[layer]));
+                if (width_left > min_width[layer])
+                {
+                    fill_bl_x.push_back(temp.bl_x + (fill_width_ratio * max_fill_width[layer]));
+                    fill_tr_x.push_back(temp.tr_x);
+                    fill_width_ratio++; // use as loop index later
+                }
+            }
+            else
+            {
+                fill_bl_x.push_back(temp.bl_x);
+                fill_tr_x.push_back(temp.tr_x);
+                fill_width_ratio = 1; // for loop used
+            }
+
+            // if length ratio > 0, means length > max_width, cut length into 1300-130 = 1170
+            if (fill_length_ratio > 0)
+            {
+                for (int a = 0; a < fill_length_ratio; a++)
+                {
+                    fill_bl_y.push_back(temp.bl_y + (a * max_fill_width[layer]));
+                    fill_tr_y.push_back(temp.bl_y + (a * max_fill_width[layer]) + max_fill_width[layer] - min_space[layer]);
+                }
+                length_left = temp.tr_y - (temp.bl_y + (fill_length_ratio * max_fill_width[layer]));
+                if (length_left > min_width[layer])
+                {
+                    fill_bl_y.push_back(temp.bl_y + (fill_length_ratio * max_fill_width[layer]));
+                    fill_tr_y.push_back(temp.tr_y);
+                    fill_length_ratio++; // use as loop index later
+                }
+            }
+            else
+            {
+                fill_bl_y.push_back(temp.bl_y);
+                fill_tr_y.push_back(temp.tr_y);
+                fill_length_ratio = 1; // for loop used
+            }
+
+            //push fill to fill_list and update density
+            for (int a = 0; a < fill_width_ratio; a++)
+            {
+                for (int b = 0; b < fill_length_ratio; b++)
+                {
+                    net_temp.rect.set_rectangle(fill_bl_x[a], fill_bl_y[b],
+                                                fill_tr_x[a], fill_tr_y[b]);
+                    fill_list.push_back(net_temp);
+                    area_temp = net_temp.rect.area();
+                    fill_area_sum += area_temp;
+                    grid[layer][i][j].fill->push_back(metal_fill_count);
+                    metal_fill_count++;
+                }
+            }
+        }
+        fill_region_used_count++;
+        no_more_fill_region = (fill_region_used_count > grid[layer][i][j].init_fill->size());
+    }
+
+    curr_density += ((double)fill_area_sum / (double)(bin_size * bin_size));
+    grid[layer][i][j].fill_area = fill_area_sum;
+    // run time density check
+
+    if (curr_density < min_density[layer])
+    {
+        //cout << "fail ";
+        //cout << "Fail: " << layer << " " << i << " " << j << " " << endl;
+        //cout << " total density " << curr_density << " " << endl;
+        if (curr_density == normal_density)
+        {
+            //cout << "Fail: " << layer << " " << i << " " << j << " " << endl;
+            //cout << "no fill, poly density = " << normal_density << endl;
+        }
+        else
+        {
+            //cout << endl;
+        }
+    }
+}
+
 
 void Layout::find_fill_region_x(int layer, int i, int j)
 {
