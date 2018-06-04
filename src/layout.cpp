@@ -709,6 +709,25 @@ void Layout::fill_insertion()
             }
         }
     }
+
+    // 6/4 test  window based fill on layer 9
+    /*
+    cout << "Window Based Fill Start" << endl;
+    int layer = 9;
+    for (int i = 0; i < range_x-1; i++) {
+        for (int j = 0; j < range_y-1; j++) {
+            fill_regions = find_fill_region_x(layer, i, j, 2);
+            metal_fill(layer, fill_regions);
+
+            double density = ((double)grid[layer][i][j].normal_area +
+                                (double)grid[layer][i][j].fill_area) /
+                                (bin_size * bin_size);
+
+            if (density <=  min_density[layer])
+                cout << layer << " " << i << " " << j << ": " << density << endl;
+        }
+    }
+    */
 }
 
 
@@ -823,8 +842,9 @@ void Layout::metal_fill(int layer, const vector<Rectangle>& fill_regions)
     }
 }
 
-
-vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j)
+// 6/4 if s = 1, bin based find fill is performed 
+// if s = 2, window based find fill is performed 
+vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j, int s)
 {
     Rectangle temp;
     net net_temp;
@@ -847,18 +867,26 @@ vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j)
     intersect_x.clear();
     intersect_y.clear();
     no_merge_list.clear();
-    bin_rect.set_rectangle(i*bin_size, j*bin_size, 
-                            (i+1)*bin_size, (j+1)*bin_size);
 
-    //cout << "***** (" << layer << " " << i << " " << j << " "
-    //     << ")******" << endl;
+    // 6/4 add s if window rect is needed 
+    bin_rect.set_rectangle(i * bin_size, j * bin_size, (i+s) * bin_size, (j+s) * bin_size);
 
-    //cout << "//=== find intersection of bin and poly ===// " << endl;
-    for (auto poly : *(grid[layer][i][j].normal))
-    {
-        temp = rect_overlap(normal_list[poly].rect, bin_rect);
-        poly_bin_instersect.push_back(temp);
-    }
+
+
+    // 6/4 change poly_bin_instersect for window based
+    for (int i1 = 0; i1 < s; i1++)
+        for (int j1 = 0; j1 < s; j1++) {
+            for (auto poly : *(grid[layer][i+i1][j+j1].normal))
+            {
+                temp = rect_overlap(normal_list[poly].rect, bin_rect);
+                poly_bin_instersect.push_back(temp);
+            }
+            for (auto poly : *(grid[layer][i+i1][j+j1].fill))
+            {
+                temp = rect_overlap(fill_list[poly].rect, bin_rect);
+                poly_bin_instersect.push_back(temp);
+            }
+        }
 
     // store x point in intersect_x
     for (auto x : poly_bin_instersect)
@@ -1069,10 +1097,9 @@ vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j)
     return fill_regions;
 }
 
-
-
-
-vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j)
+// 6/4 if s = 1, bin based find fill is performed 
+// if s = 2, window based find fill is performed 
+vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j, int s)
 {
     Rectangle temp;
     net net_temp;
@@ -1096,13 +1123,25 @@ vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j)
     intersect_y.clear();
     no_merge_list.clear();
 
-    bin_rect.set_rectangle(i * bin_size, j * bin_size, (i + 1) * bin_size, (j + 1) * bin_size);
+    // 6/4 add s if window rect is needed 
+    bin_rect.set_rectangle(i * bin_size, j * bin_size, (i+s) * bin_size, (j+s) * bin_size);
 
-    for (auto poly : *(grid[layer][i][j].normal))
-    {
-        temp = rect_overlap(normal_list[poly].rect, bin_rect);
-        poly_bin_instersect.push_back(temp);
-    }
+    // 6/4 change poly_bin_instersect for window based
+    for (int i1 = 0; i1 < s; i1++)
+        for (int j1 = 0; j1 < s; j1++) {
+            for (auto poly : *(grid[layer][i+i1][j+j1].normal))
+            {
+                temp = rect_overlap(normal_list[poly].rect, bin_rect);
+                poly_bin_instersect.push_back(temp);
+            }
+            for (auto poly : *(grid[layer][i+i1][j+j1].fill))
+            {
+                temp = rect_overlap(fill_list[poly].rect, bin_rect);
+                poly_bin_instersect.push_back(temp);
+            }
+        }
+
+
 
     // store y point in intersect_y
     for (auto y : poly_bin_instersect)
