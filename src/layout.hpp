@@ -4,6 +4,7 @@
 #include <fstream>
 #include <vector>
 #include <string.h>
+#include <algorithm>
 #include "rectangle.hpp"
 #include "parser.hpp"   // in order to read rule file
 
@@ -50,9 +51,9 @@ public:
     void bin_normal_area(int _l, int _x, int _y); 
 
     
-    // set fule infor mation min_density for each layer
+    // set rule information
     void set_rules(const vector<rule>& _rules);
-    
+
     // find available fill region = region that is not normal poly
     // 6/01 add merge inside
     void find_fill_region_x(int layer, int i, int j);
@@ -92,7 +93,7 @@ public:
     // layer = 9 (L1 to L9), L0 stores nothing 
     bin ***grid;
 
-    private:
+private:
     // need window size to set bin size: bin = 0.5 * window
     int bin_size;
     // initial layout boundary offset

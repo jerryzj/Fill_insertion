@@ -181,7 +181,7 @@ void Layout::metal_fill(int layer, int i, int j)
     Rectangle temp;
     net net_temp;
 
-    double poly_density; // normal metal density
+    double normal_density; // normal metal density
     double curr_density; // current bin density
     bool no_more_fill_region;
     int fill_region_used_count;
@@ -189,14 +189,10 @@ void Layout::metal_fill(int layer, int i, int j)
     int fill_width, fill_length;
     int fill_width_ratio, fill_length_ratio;
 
-    vector<int> fill_bl_x;
-    vector<int> fill_bl_y;
-    vector<int> fill_tr_x;
-    vector<int> fill_tr_y;
-    fill_bl_x.reserve(20);
-    fill_bl_y.reserve(20);
-    fill_tr_x.reserve(20);
-    fill_tr_y.reserve(20);
+    vector<int> fill_bl_x;  fill_bl_x.reserve(20);
+    vector<int> fill_bl_y;  fill_bl_y.reserve(20);
+    vector<int> fill_tr_x;  fill_tr_x.reserve(20);
+    vector<int> fill_tr_y;  fill_tr_y.reserve(20);
 
     int area_temp;
     int density_pass_count = 0;
@@ -208,16 +204,17 @@ void Layout::metal_fill(int layer, int i, int j)
 
     // Calculate dennsity
     bin_normal_area(layer, i, j);
-    poly_density = (double)(grid[layer][i][j].normal_area / (double)(bin_size * bin_size));
+    normal_density = (double)(grid[layer][i][j].normal_area / (double)(bin_size * bin_size));
 
-    //Start fill insertion
-    curr_density = poly_density;
+    // Start fill insertion
+    curr_density = normal_density;
     fill_region_used_count = 1;
-    no_more_fill_region = (fill_region_used_count > grid[layer][i][j].init_fill->size());
     net_temp.layer = layer;
     net_temp.net_id = 0;
     fill_area_sum = 0;
     //while (curr_density <= min_density[layer] && (!no_more_fill_region)) 5/29
+
+    no_more_fill_region = (fill_region_used_count > grid[layer][i][j].init_fill->size());
     while (!no_more_fill_region)
     {
         fill_bl_x.clear();
@@ -315,10 +312,10 @@ void Layout::metal_fill(int layer, int i, int j)
         //cout << "fail ";
         //cout << "Fail: " << layer << " " << i << " " << j << " " << endl;
         //cout << " total density " << curr_density << " " << endl;
-        if (curr_density == poly_density)
+        if (curr_density == normal_density)
         {
             //cout << "Fail: " << layer << " " << i << " " << j << " " << endl;
-            //cout << "no fill, poly density = " << poly_density << endl;
+            //cout << "no fill, poly density = " << normal_density << endl;
         }
         else
         {
@@ -328,6 +325,8 @@ void Layout::metal_fill(int layer, int i, int j)
 }
 
 /***************************************************************/
+// window_based_density_check also check if metal fill or normal fill is zero
+// overlap area to the window as well 
 void Layout::window_based_density_check()
 {
     // 5/30 version
@@ -408,11 +407,15 @@ void Layout::window_based_density_check()
                 // erase dumplicate normal that overlap with more than one bin
                 sort(normal_idx.begin(), normal_idx.end());
                 normal_idx.erase(unique(normal_idx.begin(), normal_idx.end()), normal_idx.end());
-
+                
                 // sum area of normal overlapped with window
+                int temp_normal_area;
                 for (auto idx : normal_idx)
                 {
-                    normal_area_window += area_overlap(window_rect, normal_list[idx].rect);
+                    temp_normal_area = area_overlap(window_rect, normal_list[idx].rect);
+                    if (temp_normal_area == 0) 
+                        cerr << "Normal Area is Zero" << endl;
+                    normal_area_window += temp_normal_area;
                 }
 
                 // sum area of normal in four bins within the window
@@ -452,9 +455,13 @@ void Layout::window_based_density_check()
                 fill_idx.erase(unique(fill_idx.begin(), fill_idx.end()), fill_idx.end());
 
                 // sum area of fill overlapped with window
+                int temp_fill_area;
                 for (auto idx : fill_idx)
                 {
-                    fill_area_window += area_overlap(window_rect, fill_list[idx].rect);
+                    temp_fill_area = area_overlap(window_rect, fill_list[idx].rect);
+                    if (temp_fill_area == 0) 
+                        cerr << "Fill Area is Zero" << endl;
+                    fill_area_window += temp_fill_area;
                 }
 
                 // sum area of fill in four bins within the window
@@ -733,7 +740,10 @@ void Layout::dump_bin(int layer, int x, int y)
         cerr << "Error create bin_normal file\n";
         exit(-1);
     }
-    temp.assign(to_string(lower_bound_x) + " " + to_string(lower_bound_y) + " " + to_string(upper_bound_x) + " " + to_string(upper_bound_y) +
+    temp.assign(to_string(lower_bound_x) + " " + 
+                to_string(lower_bound_y) + " " + 
+                to_string(upper_bound_x) + " " + 
+                to_string(upper_bound_y) +
                 "; chip boundary\n");
 
     // write chip boundary to normal file
@@ -742,40 +752,11 @@ void Layout::dump_bin(int layer, int x, int y)
     for (auto i : *(grid[layer][x][y].normal))
     {
         Rectangle temp = normal_list[i].rect;
-        if (temp.bl_x < lower_bound_x)
-            temp.bl_x = lower_bound_x;
-        if (temp.bl_x > upper_bound_x)
-        {
-            cerr << "Error! poly bl_x bigger than bin upper bound\n";
-            exit(-1);
-        }
-        if (temp.tr_x > upper_bound_x)
-        {
-            temp.tr_x = upper_bound_x;
-        }
-        if (temp.tr_x < lower_bound_x)
-        {
-            cerr << "Error! poly tr_x smaller than bin lower bound\n";
-            exit(-1);
-        }
-        if (temp.bl_y < lower_bound_y)
-        {
-            temp.bl_y = lower_bound_y;
-        }
-        if (temp.bl_y > upper_bound_y)
-        {
-            cerr << "Error! poly bl_y bigger than bin upper bound\n";
-            exit(-1);
-        }
-        if (temp.tr_y > upper_bound_y)
-        {
-            temp.tr_y = upper_bound_y;
-        }
-        if (temp.tr_y < lower_bound_y)
-        {
-            cerr << "Error! poly tr_y smaller than bin lower bound\n";
-            exit(-1);
-        }
+        temp.bl_x = max(temp.bl_x, lower_bound_x);
+        temp.bl_y = max(temp.bl_y, lower_bound_y);
+        temp.tr_x = min(temp.tr_x, upper_bound_x);
+        temp.tr_y = min(temp.tr_y, upper_bound_y);
+
         string s(to_string(temp.bl_x) + " " +
                  to_string(temp.bl_y) + " " +
                  to_string(temp.tr_x) + " " +
@@ -793,14 +774,22 @@ void Layout::dump_bin(int layer, int x, int y)
         cerr << "Error create bin_fill file\n";
         exit(-1);
     }
-    temp.assign(to_string(lower_bound_x) + " " + to_string(lower_bound_y) + " " + to_string(upper_bound_x) + " " + to_string(upper_bound_y) +
+    temp.assign(to_string(lower_bound_x) + " " + 
+                to_string(lower_bound_y) + " " + 
+                to_string(upper_bound_x) + " " + 
+                to_string(upper_bound_y) +
                 "; chip boundary\n");
 
-    // write chip boundary to normal file
+    // write chip boundary to fill file
     fill_file.write(temp.c_str(), temp.length());
     for (auto i : *(grid[layer][x][y].fill))
     {
         Rectangle temp = fill_list[i].rect;
+        temp.bl_x = max(temp.bl_x, lower_bound_x);
+        temp.bl_y = max(temp.bl_y, lower_bound_y);
+        temp.tr_x = min(temp.tr_x, upper_bound_x);
+        temp.tr_y = min(temp.tr_y, upper_bound_y);
+
         string s(to_string(temp.bl_x) + " " +
                  to_string(temp.bl_y) + " " +
                  to_string(temp.tr_x) + " " +
@@ -817,7 +806,6 @@ void Layout::fill_insertion()
 {
     int range_x = normal_list[0].rect.tr_x / bin_size;
     int range_y = normal_list[0].rect.tr_y / bin_size;
-    cout << "layer density 9 " << min_density[9] << endl;
 
     // for each bin
     for (int layer = 1; layer <= 9; layer++) // 5/29 modified
@@ -841,11 +829,12 @@ void Layout::fill_insertion()
                 // 3,3 is minimum requirement for not violate DRC
                 //random_fill(layer, i, j, 3, 3);
 
+                // 6/4 added only for temproary check 
                 double density = ((double)grid[layer][i][j].normal_area +
                                     (double)grid[layer][i][j].fill_area) /
                                     (bin_size * bin_size);
 
-                if (density <= 0.4)
+                if (density <=  min_density[layer])
                      cout << layer << " " << i << " " << j << ": " << density << endl;
 
                 /*
@@ -1370,7 +1359,7 @@ void Layout::find_fill_region_y(int layer, int i, int j)
     after_merge_y_list.clear();
 }
 
-// Random fill is not needed 
+// 6/4 Random fill is not needed 
 void Layout::random_fill(int layer, int i, int j, int x_ratio, int y_ratio)
 {
     int range_x = bin_size / (min_space[layer] * x_ratio);
