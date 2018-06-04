@@ -475,6 +475,11 @@ void Layout::DRC_check_space()
                     fill_idx.push_back(idx);
                 }
 
+                // 6/4 for metal fill cross multiple bins, we need to remove duplicate index 
+                sort(fill_idx.begin(), fill_idx.end());
+                fill_idx.erase(unique(fill_idx.begin(), fill_idx.end()), fill_idx.end());
+
+
                 // Read the index of all normal overlap with window
                 for (auto idx : *(grid[layer][i][j].normal))
                 {
@@ -550,6 +555,11 @@ void Layout::DRC_check_space()
                     fill_idx.push_back(idx);
                 }
 
+                // 6/4 for metal fill cross multiple bins, we need to remove duplicate index 
+                sort(fill_idx.begin(), fill_idx.end());
+                fill_idx.erase(unique(fill_idx.begin(), fill_idx.end()), fill_idx.end());
+
+
                 for (int fill_x = 0; fill_x < fill_idx.size(); fill_x++)
                 {
                     a = fill_idx[fill_x];
@@ -560,12 +570,13 @@ void Layout::DRC_check_space()
                         check_space_pass = check_space(fill_list[a].rect, fill_list[b].rect, min_space[layer]);
                         if (!check_space_pass)
                         {
-                            //cout << "num" << layer << " " << i << " " << j << " ";
-                            //cout << "this two violate min sapce = " << min_space[layer] << endl;
-                            //fill_list[fill_x].rect.dump();
-                            //fill_list[fill_y].rect.dump();
+                            cout << "num" << layer << " " << i << " " << j << " ";
+                            cout << "this two violate min sapce = " << min_space[layer] << endl;
+                            cout << a << " " << b << endl;
+                            fill_list[a].rect.dump();
+                            fill_list[b].rect.dump();
                             fill_fill_fail_count++;
-                            //cout << "---------------------" << endl;
+                            cout << "---------------------" << endl;
                         }
                     }
                 }
@@ -699,19 +710,19 @@ void Layout::fill_insertion()
                 //random_fill(layer, i, j, 3, 3);
 
                 // 6/4 added only for temproary check 
-                double density = ((double)grid[layer][i][j].normal_area +
-                                    (double)grid[layer][i][j].fill_area) /
-                                    (bin_size * bin_size);
+                //double density = ((double)grid[layer][i][j].normal_area +
+                //                    (double)grid[layer][i][j].fill_area) /
+                //                   (bin_size * bin_size);
 
-                if (density <=  min_density[layer])
-                     cout << layer << " " << i << " " << j << ": " << density << endl;
+                //if (density <=  min_density[layer])
+                //     cout << layer << " " << i << " " << j << ": " << density << endl;
 
             }
         }
     }
 
     // 6/4 test  window based fill on layer 9
-    /*
+    
     cout << "Window Based Fill Start" << endl;
     int layer = 9;
     for (int i = 0; i < range_x-1; i++) {
@@ -727,7 +738,7 @@ void Layout::fill_insertion()
                 cout << layer << " " << i << " " << j << ": " << density << endl;
         }
     }
-    */
+    
 }
 
 
