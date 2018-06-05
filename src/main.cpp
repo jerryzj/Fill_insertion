@@ -32,7 +32,7 @@ int main(int argc ,char *argv[]){
     filename.replace(pos+1,filename.length()-pos,config.rule);
     // here filename should be ./circuit#/rule.dat
     //cout<<filename;
-    // for testing 
+    // for testing 6 
     rule.read_file((char*)filename.c_str());
     //rule.dump();
     // read layout file
@@ -48,21 +48,17 @@ int main(int argc ,char *argv[]){
     layout.create3Dbin();
     layout.bin_mapping();
     
-    int layer = 1;
-    for(auto i: rule.rules){
-        layout.set_min_density(layer, i.min_density);
-        layout.set_min_width(layer, i.min_width);
-        layout.set_max_fill_width(layer, i.max_fill_width);
-        layout.set_min_space(layer, i.min_space);
-        layer++;    
-    }
+    layout.set_rules(rule.rules);   // input vector<rule>
+
     cout << endl;
-    layout.find_fill_region();
-    layout.metal_fill();
-    // dump specific in
-    layout.dump_bin(1,77,25);
-    //layout.window_based_density_check();
-    //ayout.DRC_check_width();
-    //layout.DRC_check_space();
+    layout.fill_insertion();
+    // dump specific in 
+    //layout.dump_bin(9, 0, 105);
+    
+    layout.window_based_density_check();
+    layout.DRC_check_width();
+    layout.DRC_check_space();
+
+    //layout.dump_bin(9, 0, 105);
     return 0;
 }
