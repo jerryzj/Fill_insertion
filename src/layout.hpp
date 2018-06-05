@@ -4,11 +4,12 @@
 #include <fstream>
 #include <vector>
 #include <string.h>
+#include <algorithm>
 #include "rectangle.hpp"
+#include "parser.hpp"   // in order to read rule file
+
 
 using namespace std;
-
-// TODO: calculate distance between two rectangles(DRC)
 
 class Layout{
 public:    
@@ -20,13 +21,11 @@ public:
     struct bin{
         vector<int>* normal;
         vector<int>* fill;
-        vector<int>* init_fill;
         int normal_area;
         int fill_area;
         bin(){  // structure constructor
             normal = new vector<int>;
             fill = new vector<int>;
-            init_fill = new vector<int>;
             normal_area = 0;
             fill_area = 0;
         }
@@ -46,27 +45,43 @@ public:
 
     // this updates the normal and fill area of grid[_l][_x][_y] 
     void bin_normal_area(int _l, int _x, int _y); 
+    void assign_normal(int i);
+    void assign_fill(int i);
 
     
-    // set fule infor mation min_density for each layer
-    void set_min_density(int layer, double density);
-    void set_min_width(int layer, int width);
-    void set_max_fill_width(int layer, int width);
-    void set_min_space(int layer, int space);
+    // set rule information
+    void set_rules(const vector<rule>& _rules);
 
     // find available fill region = region that is not normal poly
-    void find_fill_region();
+    // 6/01 add merge inside
+    vector<Rectangle> find_fill_region_x(int layer, int i, int j, int s = 1);
+    vector<Rectangle> find_fill_region_y(int layer, int i, int j, int s = 1);
 
     // insert fill in availiable fill region 
-    void metal_fill();
+    // 0605 check, when width > max_fill_width, add fill which size <= max_fill_width by calculating width_left and lenfth_left
+    void metal_fill(int layer, const vector<Rectangle>& fill_regions);
+    
+    // Insert fill
+    void fill_insertion();
 
+    // 0605 add, construct based on one_window_density_check
     void window_based_density_check();
+
+    // 0605 add, check density for one window and verify area calculation
+    // s = 2 means window based check
+    bool one_window_density_check(int layer, int i, int j, int s = 2);   
+
+    // 0605 add, in one window check min_space between fill and fill, fill and normal
+    bool one_window_DRC_check_space(int layer, int i, int j, int s = 2);
+
+    // 0605 add, construct based on one_window_DRC_check_space
+    bool DRC_check_space();
 
     // check min_width, max_fill_width 
     void DRC_check_width();
 
-    // check min_space between fill and fill, fill and normal
-    void DRC_check_space();
+    
+    
 
     void dump_fill_list();
     // select a bin and dump it into two files 
@@ -78,12 +93,11 @@ public:
     // offset = buttom-left corner of (original) boundary
     vector<net> normal_list;
     vector<net> fill_list;
-    vector<net> init_fill_list;
     // 3D bin layer*row*col
     // layer = 9 (L1 to L9), L0 stores nothing 
     bin ***grid;
 
-    private:
+private:
     // need window size to set bin size: bin = 0.5 * window
     int bin_size;
     // initial layout boundary offset
@@ -93,6 +107,10 @@ public:
     vector<int> min_width;
     vector<int> max_fill_width;
     vector<int> min_space;
+
+    // 6/01
+    int metal_fill_count = 0;
+    int random_fill_count = 0;
 
     
 };

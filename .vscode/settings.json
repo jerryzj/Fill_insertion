@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.h": "c",
         "iostream": "cpp",
         "iosfwd": "cpp",
         "ostream": "cpp",
@@ -11,7 +12,11 @@
         "unordered_map": "cpp",
         "system_error": "cpp",
         "initializer_list": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "__functional_03": "cpp",
+        "__string": "cpp",
+        "functional": "cpp",
+        "string": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }
