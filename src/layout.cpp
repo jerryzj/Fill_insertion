@@ -1,4 +1,5 @@
 #include "layout.hpp"
+#include "statistic.hpp"
 
 Layout::Layout()
 {
@@ -13,6 +14,9 @@ Layout::Layout()
 
     min_space.reserve(10);
 }
+
+
+
 
 void Layout::read_file(char *filename)
 {
@@ -88,7 +92,8 @@ void Layout::create3Dbin()
     int range_y = normal_list[0].rect.tr_y / bin_size;
 
     grid = new bin **[10];
-    for (int i = 1; i <= 9; i++)
+    // 0606 layer 0 is used to store ground
+    for (int i = 0; i <= 9; i++)   
     {
         grid[i] = new bin *[range_x];
         for (int j = 0; j < range_x; j++)
@@ -103,8 +108,10 @@ void Layout::bin_mapping()
     // 5/24 revise bin assignment
     // bl, tr = (0, 5000), (0, 5000) will only be
     // assigned to grid[layer][0][0]
-
-    for (int i = 1; i < (int)normal_list.size(); i++)
+    
+    // 0606 normal index 0 (layout boundary) will be assigned 
+    // to all bins in layer 0  
+    for (int i = 0; i < (int)normal_list.size(); i++)
         assign_normal(i);
 }
 
@@ -204,6 +211,36 @@ void Layout::set_rules(const vector<rule> &_rules)
         max_fill_width.push_back(r.max_fill_width);
         min_space.push_back(r.min_space);
     }
+}
+
+
+
+void Layout::dump_statistic()
+{
+    double density;
+    vector<double> data;
+
+    int range_x = normal_list[0].rect.tr_x / bin_size;
+    int range_y = normal_list[0].rect.tr_y / bin_size;
+
+    cout << "----------------------------" << endl;
+    cout << "Dump Statistics" << endl;
+    for (int layer = 0; layer <= 9; layer++) {
+        data.clear();   // clean vector
+        cout << "Layer " << layer << " ";
+        for (int x = 0; x < range_x; x++) {
+            for (int y = 0; y < range_y; y++) {
+                density = ((double)grid[layer][x][y].normal_area +
+                            (double)grid[layer][x][y].fill_area) /
+                            (bin_size * bin_size);        
+                data.push_back(density);
+                //cout << density << endl;
+            }
+        }
+        cout << "Mean = " << getMean(data) << " ";
+        cout << "Stdev = " << getStdDev(data) << endl;
+    }
+
 }
 
 /***************************************************************/
@@ -424,9 +461,6 @@ bool Layout::one_window_DRC_check_space(int layer, int i, int j, int s)
 
     // store index of fill and normal
     int a, b;
-
-    int area_temp;
-    int area_ori;
 
     // store index of fill in each window
     vector<int> fill_idx;
