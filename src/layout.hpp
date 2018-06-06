@@ -80,7 +80,8 @@ public:
     // check min_width, max_fill_width 
     void DRC_check_width();
 
-    
+    void dump_statistic();
+
     
 
     void dump_fill_list();
