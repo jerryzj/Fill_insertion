@@ -59,7 +59,17 @@ int main(int argc ,char *argv[]){
     layout.DRC_check_width();
     layout.DRC_check_space();
     layout.dump_statistic();
+
+    cout << "afawgegbreeagar" << endl;
+    layout.fill_sort();
+    layout.fill_remapping();
+
+    layout.window_based_density_check();
+    layout.DRC_check_width();
+    layout.DRC_check_space();
+    layout.dump_statistic();
     
+    layout.dump("fill"); 
     //layout.dump_bin(9, 0, 105);
     return 0;
 }
