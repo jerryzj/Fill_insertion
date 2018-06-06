@@ -51,6 +51,14 @@ public:
     void fill_sort();
     void fill_remapping();
     
+    // delete fill with index = i from bins 
+    // also set that fill net_id = -1
+    void delete_fill(int i);
+
+    // update fill of index = i to new rectangle r_new
+    void resize_fill(int i, const Rectangle& r_new);
+
+
     // set rule information
     void set_rules(const vector<rule>& _rules);
 
