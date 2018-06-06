@@ -162,6 +162,7 @@ void Layout::fill_remapping() {
 
 }
 
+// assign normal with index = i to bins
 void Layout::assign_normal(int i)
 {
     int layer;
@@ -185,6 +186,7 @@ void Layout::assign_normal(int i)
         }
 }
 
+// assign fill with index = i to bins
 void Layout::assign_fill(int i)
 {
     int layer;
@@ -206,6 +208,71 @@ void Layout::assign_fill(int i)
             grid[layer][j][k].fill_area +=
                 area_overlap(fill_list[i].rect, temp_rect);
         }
+}
+
+// delete fill with index = i from bins 
+// also set that fill net_id = -1
+void Layout::delete_fill(int i)
+{
+    int layer;
+    Rectangle temp_rect;
+    Rectangle bin_index;
+
+    layer = fill_list[i].layer;
+    bin_index.bl_x = fill_list[i].rect.bl_x / bin_size;
+    bin_index.bl_y = fill_list[i].rect.bl_y / bin_size;
+    bin_index.tr_x = (fill_list[i].rect.tr_x - 1) / bin_size;
+    bin_index.tr_y = (fill_list[i].rect.tr_y - 1) / bin_size;
+
+    for (int j = bin_index.bl_x; j <= bin_index.tr_x; j++) {
+        for (int k = bin_index.bl_y; k <= bin_index.tr_y; k++) {
+            grid[layer][j][k].fill->erase(
+                remove(grid[layer][j][k].fill->begin(), 
+                        grid[layer][j][k].fill->end(), i), 
+                        grid[layer][j][k].fill->end());
+
+            temp_rect.set_rectangle(j * bin_size, k * bin_size,
+                                    (j + 1) * bin_size, (k + 1) * bin_size);
+            grid[layer][j][k].fill_area -=
+                area_overlap(fill_list[i].rect, temp_rect);
+        }
+    }
+
+    // set net_id = -1 to mark deletion
+    fill_list[i].net_id = -1;
+}
+
+// fill index and the destinate rectangle
+void Layout::resize_fill(int i, const Rectangle& r_new)
+{
+    int layer;
+    int area_org;
+    int area_new;
+
+    Rectangle temp_rect;
+    Rectangle bin_index;
+
+    layer = fill_list[i].layer;
+    bin_index.bl_x = fill_list[i].rect.bl_x / bin_size;
+    bin_index.bl_y = fill_list[i].rect.bl_y / bin_size;
+    bin_index.tr_x = (fill_list[i].rect.tr_x - 1) / bin_size;
+    bin_index.tr_y = (fill_list[i].rect.tr_y - 1) / bin_size;    
+
+
+    for (int j = bin_index.bl_x; j <= bin_index.tr_x; j++) {
+        for (int k = bin_index.bl_y; k <= bin_index.tr_y; k++) {
+
+            temp_rect.set_rectangle(j * bin_size, k * bin_size,
+                                    (j + 1) * bin_size, (k + 1) * bin_size);
+
+            area_org = area_overlap(fill_list[i].rect, temp_rect);
+            area_new = area_overlap(r_new, temp_rect);
+
+            grid[layer][j][k].fill_area += area_new - area_org;
+        }
+    }
+
+    fill_list[i].rect = r_new;
 }
 
 void Layout::dump(string mode)
@@ -362,12 +429,7 @@ bool Layout::one_window_density_check(int layer, int i, int j, int s)
 
     // Verification: Does area of normal overlapped with window
     // equal to sum of area of normal in four bins within the window?
-    if (normal_area_bin == normal_area_window)
-    {
-        //cout << "normal area verification pass" << endl;
-    }
-    else
-    {
+    if (normal_area_bin != normal_area_window) {
         cout << "normal area verification fail" << endl;
     }
 
@@ -477,8 +539,7 @@ void Layout::DRC_check_width()
 {
     cout << "//=== start DRC check ===//" << endl;
 
-    int min_width_fail_count = 0;
-    int max_fill_width_fail_count = 0;
+    int width_check_fail_count = 0;
     int width_x;
     int length_y;
     int layer;
@@ -487,25 +548,13 @@ void Layout::DRC_check_width()
     for (int i = 0; i < fill_list.size(); i++)
     {
         layer = fill_list[i].layer;
-        width_x = fill_list[i].rect.tr_x - fill_list[i].rect.bl_x;
-        length_y = fill_list[i].rect.tr_y - fill_list[i].rect.bl_y;
 
-        if (width_x < min_width[layer] || length_y < min_width[layer])
-        {
-            min_width_fail_count++;
-        }
-
-        if (width_x > max_fill_width[layer] || length_y > max_fill_width[layer])
-        {
-            //cout << "width = " << width_x << " ";
-            //cout << "length = " << length_y << endl;
-            //cout << "max = " << max_fill_width[layer] << endl;
-            max_fill_width_fail_count++;
-        }
+        if (fill_list[i].rect.check_width(min_width[layer], 
+                                max_fill_width[layer]) == false)
+            width_check_fail_count++;
     }
     cout << "total fill: " << fill_list.size() << endl;
-    cout << "min_width check fail " << min_width_fail_count << endl;
-    cout << "max fill width check fail " << max_fill_width_fail_count << endl;
+    cout << "width check fail " << width_check_fail_count << endl;
     cout << "----------------------------" << endl;
 }
 
@@ -795,10 +844,6 @@ void Layout::metal_fill(int layer, const vector<Rectangle> &fill_regions)
     fill_tr_x.reserve(20);
     vector<int> fill_tr_y;
     fill_tr_y.reserve(20);
-
-    int density_pass_count = 0;
-    int density_fail_count = 0;
-    int no_fill_count = 0;
 
     int width_left, length_left;
 

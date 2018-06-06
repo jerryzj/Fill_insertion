@@ -1,6 +1,6 @@
 #include "parser.hpp"
 #include "layout.hpp"
-
+#include "rectangle.hpp"
 
 int main(int argc ,char *argv[]){
     // Cin/Cout Optimization
@@ -54,22 +54,12 @@ int main(int argc ,char *argv[]){
     layout.fill_insertion();
     // dump specific in 
     //layout.dump_bin(9, 0, 105);
-    
-    layout.window_based_density_check();
-    layout.DRC_check_width();
-    layout.DRC_check_space();
-    layout.dump_statistic();
 
-    cout << "afawgegbreeagar" << endl;
-    layout.fill_sort();
-    layout.fill_remapping();
 
     layout.window_based_density_check();
     layout.DRC_check_width();
     layout.DRC_check_space();
     layout.dump_statistic();
     
-    layout.dump("fill"); 
-    //layout.dump_bin(9, 0, 105);
     return 0;
 }

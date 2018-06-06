@@ -77,3 +77,35 @@ Rectangle rect_overlap(const Rectangle &_r1, const Rectangle &_r2)
 
     return r_out;
 }
+
+bool Rectangle::check_width(int min_width, int max_width)
+{
+
+    int width_x = tr_x - bl_x;
+    int length_y = tr_y - bl_y;
+
+    if (width_x < min_width || length_y < min_width) 
+        return false;
+    if (width_x > max_width || length_y > max_width)
+        return false;
+    return true;
+}
+
+// resize and return a resized rectangle
+// enlarge if parameter is negative
+Rectangle rect_resize(const Rectangle &_in, double lf, double dw, double rt, double up)
+{
+    Rectangle _out;
+
+    int width_x = _in.tr_x - _in.bl_x;
+    int length_y = _in.tr_y - _in.bl_y;   
+
+    _out = _in;
+
+    _out.bl_x += lf * width_x;
+    _out.bl_y += dw * length_y;
+    _out.tr_x -= rt * width_x;
+    _out.tr_y -= up * length_y;
+
+    return _out;
+}
