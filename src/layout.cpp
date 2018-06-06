@@ -115,6 +115,53 @@ void Layout::bin_mapping()
         assign_normal(i);
 }
 
+
+// stable_sort fill list and remove deleted fills
+void Layout::fill_sort() {
+    // remove deleted nets (net_id = -1)
+    fill_list.erase(
+        remove_if(fill_list.begin(), fill_list.end(),
+                    [](const net & o) {return (o.net_id == -1);}), 
+                    fill_list.end()
+    );
+    // do sorting on bl_x
+    stable_sort(fill_list.begin(), fill_list.end(),
+          [](const net& lhs, const net& rhs) {
+                return lhs.rect.bl_x < rhs.rect.bl_x;
+            });
+    
+    // do sorting on layer
+    stable_sort(fill_list.begin(), fill_list.end(),
+          [](const net& lhs, const net& rhs) {
+                return lhs.layer < rhs.layer;
+            });
+
+
+
+
+
+}
+
+void Layout::fill_remapping() {
+
+    // clean fill area and bin assignment
+    int range_x = normal_list[0].rect.tr_x / bin_size;
+    int range_y = normal_list[0].rect.tr_y / bin_size;    
+
+    for (int layer = 0; layer <=9; layer++) {
+        for (int x = 0; x < range_x; x++) {
+            for (int y = 0; y < range_y; y++) {
+                grid[layer][x][y].fill_area = 0;
+                grid[layer][x][y].fill->clear();
+            }
+        }
+    }
+
+    for (int i = 0; i < (int)fill_list.size(); i++)
+        assign_fill(i);    
+
+}
+
 void Layout::assign_normal(int i)
 {
     int layer;
@@ -161,20 +208,26 @@ void Layout::assign_fill(int i)
         }
 }
 
-void Layout::dump()
+void Layout::dump(string mode)
 {
     cout << "----------------------\n";
     cout << "     Layout file\n";
     cout << "----------------------\n";
 
-    for (auto v : normal_list)
-    {
-        cout << v.rect.bl_x << " "
-             << v.rect.bl_y << " "
-             << v.rect.tr_x << " "
-             << v.rect.tr_y << " "
-             << v.net_id << " "
-             << v.layer << endl;
+    if (mode == "normal" || mode == "all") {
+        cout << "Normal List" << endl;
+        for (auto v : normal_list)
+            cout << v.rect.bl_x << " " << v.rect.bl_y << " "
+                << v.rect.tr_x << " " << v.rect.tr_y << " "
+                << v.net_id << " " << v.layer << endl;
+    }
+
+    if (mode == "fill"  || mode == "all") {
+        cout << "Fill List" << endl;
+        for (auto v : fill_list)
+            cout << v.rect.bl_x << " " << v.rect.bl_y << " "
+                << v.rect.tr_x << " " << v.rect.tr_y << " "
+                << v.net_id << " " << v.layer << endl;
     }
 }
 // untest, assign normal_area of a particular bin at grid[_l][_x][_y]
@@ -243,6 +296,10 @@ void Layout::dump_statistic()
 
 }
 
+
+
+
+
 /***************************************************************/
 // window_based_density_check also check if metal fill or normal fill is zero
 // overlap area to the window as well
@@ -286,7 +343,7 @@ bool Layout::one_window_density_check(int layer, int i, int j, int s)
     }
 
     // erase dumplicate normal that overlap with more than one bin
-    sort(normal_idx.begin(), normal_idx.end());
+    stable_sort(normal_idx.begin(), normal_idx.end());
     normal_idx.erase(unique(normal_idx.begin(), normal_idx.end()), normal_idx.end());
 
     // sum area of normal overlapped with window
@@ -326,7 +383,7 @@ bool Layout::one_window_density_check(int layer, int i, int j, int s)
     }
 
     // erase dumplicate fill that overlap with more than one bin
-    sort(fill_idx.begin(), fill_idx.end());
+    stable_sort(fill_idx.begin(), fill_idx.end());
     fill_idx.erase(unique(fill_idx.begin(), fill_idx.end()), fill_idx.end());
 
     // sum area of fill overlapped with window
@@ -483,7 +540,7 @@ bool Layout::one_window_DRC_check_space(int layer, int i, int j, int s)
         }
     }
 
-    sort(fill_idx.begin(), fill_idx.end());
+    stable_sort(fill_idx.begin(), fill_idx.end());
     fill_idx.erase(unique(fill_idx.begin(), fill_idx.end()), fill_idx.end());
 
     // Read the index of all normal overlap with window
@@ -905,8 +962,8 @@ vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j, int s)
             intersect_x.push_back(bin_rect.tr_x);
     }
 
-    // sort and erase duplicate x
-    sort(intersect_x.begin(), intersect_x.end());
+    // stable_sort and erase duplicate x
+    stable_sort(intersect_x.begin(), intersect_x.end());
     intersect_x.erase(unique(intersect_x.begin(), intersect_x.end()), intersect_x.end());
 
     //cout << "//=== Set initialize fill region ===// " << endl;
@@ -944,8 +1001,8 @@ vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j, int s)
             if (intersect_y.back() < bin_rect.tr_y)
                 intersect_y.push_back(bin_rect.tr_y);
         }
-        // sort and erase duplicate y
-        sort(intersect_y.begin(), intersect_y.end());
+        // stable_sort and erase duplicate y
+        stable_sort(intersect_y.begin(), intersect_y.end());
         intersect_y.erase(unique(intersect_y.begin(), intersect_y.end()), intersect_y.end());
 
         for (int in_y = 0; in_y < intersect_y.size() - 1; in_y++)
@@ -1045,7 +1102,7 @@ vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j, int s)
 
             // for no_merge_list[c], merge with other rect that has same y
             // merge x point
-            sort(before_merge_x_list.begin(), before_merge_x_list.end());
+            stable_sort(before_merge_x_list.begin(), before_merge_x_list.end());
 
             for (int d = 0; d < before_merge_x_list.size() - 1;)
             {
@@ -1159,8 +1216,8 @@ vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j, int s)
             intersect_y.push_back(bin_rect.tr_y);
     }
 
-    // sort and erase duplicate y
-    sort(intersect_y.begin(), intersect_y.end());
+    // stable_sort and erase duplicate y
+    stable_sort(intersect_y.begin(), intersect_y.end());
     intersect_y.erase(unique(intersect_y.begin(), intersect_y.end()), intersect_y.end());
 
     //cout << "//=== Set initialize fill region ===// " << endl;
@@ -1198,8 +1255,8 @@ vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j, int s)
             if (intersect_x.back() < bin_rect.tr_x)
                 intersect_x.push_back(bin_rect.tr_x);
         }
-        // sort and erase duplicate x
-        sort(intersect_x.begin(), intersect_x.end());
+        // stable_sort and erase duplicate x
+        stable_sort(intersect_x.begin(), intersect_x.end());
         intersect_x.erase(unique(intersect_x.begin(), intersect_x.end()), intersect_x.end());
 
         for (int in_x = 0; in_x < intersect_x.size() - 1; in_x++)
@@ -1296,7 +1353,7 @@ vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j, int s)
 
             // for no_merge_list[c], merge with other rect that has same y
             // merge x point
-            sort(before_merge_y_list.begin(), before_merge_y_list.end());
+            stable_sort(before_merge_y_list.begin(), before_merge_y_list.end());
 
             for (int d = 0; d < before_merge_y_list.size() - 1;)
             {

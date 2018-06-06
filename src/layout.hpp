@@ -35,7 +35,7 @@ public:
     // read layout file
     void read_file(char* filename);
     // print layout file (for debugging)
-    void dump();
+    void dump(string mode = "all");
     // create 3D bin 
     void create3Dbin();
     // set bin size
@@ -48,6 +48,8 @@ public:
     void assign_normal(int i);
     void assign_fill(int i);
 
+    void fill_sort();
+    void fill_remapping();
     
     // set rule information
     void set_rules(const vector<rule>& _rules);
@@ -82,7 +84,7 @@ public:
 
     void dump_statistic();
 
-    
+
 
     void dump_fill_list();
     // select a bin and dump it into two files 
