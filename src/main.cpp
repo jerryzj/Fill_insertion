@@ -1,6 +1,6 @@
 #include "parser.hpp"
 #include "layout.hpp"
-
+#include "rectangle.hpp"
 
 int main(int argc ,char *argv[]){
     // Cin/Cout Optimization
@@ -32,20 +32,36 @@ int main(int argc ,char *argv[]){
     filename.replace(pos+1,filename.length()-pos,config.rule);
     // here filename should be ./circuit#/rule.dat
     //cout<<filename;
-    // for testing 
+    // for testing 6 
     rule.read_file((char*)filename.c_str());
     //rule.dump();
     // read layout file
     pos = filename.find_last_of('/');
     filename.replace(pos+1,filename.length()-pos,config.input);
     // here filename should be ./circuit#/layout*.cut
-    //cout<<filename;
+    // cout<<filename;
     // for testing 
     layout.read_file((char*)filename.c_str());
-    layout.dump();
+    //layout.dump();
     // Temporary set bin size = 5000
     layout.set_bin_size(5000);
     layout.create3Dbin();
+    layout.bin_mapping();
+    
+    layout.set_rules(rule.rules);   // input vector<rule>
+
+    cout << endl;
+    layout.fill_insertion();
+    // dump specific in 
+
+
+    layout.window_based_density_check();
+    layout.DRC_check_width();
+    layout.DRC_check_space();
+    layout.dump_statistic();
+
+
+    layout.dump_bin(9, 69, 33);
 
     return 0;
 }
