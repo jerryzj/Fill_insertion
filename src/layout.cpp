@@ -561,7 +561,7 @@ void Layout::DRC_check_width()
 
 
 
-bool Layout::one_net_DRC_check_space(const Layout::net& _net)
+bool Layout::one_net_DRC_check_space(const Layout::net& _net, int index)
 {
     // return value of check space value
     bool check_space_pass;
@@ -596,6 +596,13 @@ bool Layout::one_net_DRC_check_space(const Layout::net& _net)
     // erase duplicate fill index 
     stable_sort(fill_idx.begin(), fill_idx.end());
     fill_idx.erase(unique(fill_idx.begin(), fill_idx.end()), fill_idx.end());
+
+    // remove same net id if not zero
+    if (index != -1) {
+        fill_idx.erase(
+            remove(fill_idx.begin(), fill_idx.end(), index), 
+                    fill_idx.end());
+    }
 
 
     // check min space bte new rectangle and normal 
@@ -653,7 +660,7 @@ bool Layout::one_window_DRC_check_space(int layer, int i, int j, int s)
     fill_idx.erase(unique(fill_idx.begin(), fill_idx.end()), fill_idx.end());
 
     for (auto n: fill_idx) {
-        check_space_pass = one_net_DRC_check_space(fill_list[n]);
+        check_space_pass = one_net_DRC_check_space(fill_list[n], n);
         if (check_space_pass == false) {
             cout << n <<" fill space voilate" << endl;    
             return false;
