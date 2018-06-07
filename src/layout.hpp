@@ -109,7 +109,7 @@ public:
     void random_expand(net& _net, int layer, int i, int j, int s, int step, string mode);
 
     // no net check space
-    bool one_net_DRC_check_space(const net& _net);
+    bool one_net_DRC_check_space(const net& _net, int index = -1);
 
 
     // list of nets 
