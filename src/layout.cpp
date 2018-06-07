@@ -678,7 +678,7 @@ bool Layout::DRC_check_space()
 }
 
 
-bool Layout::one_net_DRC_check_space(Layout::net _net)
+bool Layout::one_net_DRC_check_space(const Layout::net& _net)
 {
     // return value of check space value
     bool check_space_pass;
