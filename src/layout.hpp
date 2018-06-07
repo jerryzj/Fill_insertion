@@ -32,17 +32,29 @@ public:
     };
      
     Layout();
+    //*************************
+    //        File I/O
+    //*************************
     // read layout file
     void read_file(char* filename);
     // print layout file (for debugging)
     void dump(string mode = "all");
+
+    void dump_statistic();
+
+    void dump_fill_list();
+    // select a bin and dump it into two files(normal.cut, fill.cut)
+    void dump_bin(int layer, int offset_x, int offset_y);
+
+    //*************************
+    //     Bin structure
+    //*************************
     // create 3D bin 
     void create3Dbin();
     // set bin size
     void set_bin_size(int size);
     // Map raw layout file to 3D bin 
     void bin_mapping();
-
     // this updates the normal and fill area of grid[_l][_x][_y] 
     void bin_normal_area(int _l, int _x, int _y); 
     void assign_normal(int i);
@@ -90,14 +102,7 @@ public:
     // check min_width, max_fill_width 
     void DRC_check_width();
 
-    void dump_statistic();
-
-
-
-    void dump_fill_list();
-    // select a bin and dump it into two files 
-    void dump_bin(int layer, int offset_x, int offset_y);
-
+    
 
     // random fill
     void random_fill(int layer, int i, int j, int s);
@@ -129,7 +134,7 @@ private:
     vector<int> min_space;
 
     // 6/01
-    int metal_fill_count = 0;
+    int metal_fill_count;
 
     
 };
