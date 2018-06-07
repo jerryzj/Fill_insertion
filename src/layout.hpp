@@ -76,6 +76,8 @@ public:
     void fill_sort();
     // remap the sorted fill list to Bin (named "grid")
     void fill_remapping();
+    // check if a net is critical net
+    bool Is_critical(int net_id, vector<int>& list);
     
     //*************************
     //Fill insertion Algorithms  
