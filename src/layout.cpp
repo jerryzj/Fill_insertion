@@ -1575,9 +1575,7 @@ void Layout::random_expand(Layout::net& _net, int layer, int i, int j, int s, in
         if (mode == "lf") net_expand.rect.bl_x -= step;
         if (mode == "rt") net_expand.rect.tr_x += step;
         if (mode == "dw") net_expand.rect.bl_y -= step;
-        if (mode == "up") ilmsfa
-        
-        virtnet_expand.rect.tr_y += step;
+        if (mode == "up") net_expand.rect.tr_y += step;
         
         // check spaceing 
         check_expand = one_net_DRC_check_space(net_expand);
