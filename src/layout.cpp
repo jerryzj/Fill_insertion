@@ -297,22 +297,6 @@ void Layout::dump(string mode)
                 << v.net_id << " " << v.layer << endl;
     }
 }
-// untest, assign normal_area of a particular bin at grid[_l][_x][_y]
-void Layout::bin_normal_area(int _l, int _x, int _y)
-{
-    int temp_area;
-    Rectangle bin_rect(_x * bin_size, _y * bin_size,
-                       (_x + 1) * bin_size, (_y + 1) * bin_size);
-    // calculate normal area
-
-    temp_area = 0;
-    for (auto i : *(grid[_l][_x][_y].normal))
-    {
-        temp_area += area_overlap(bin_rect, normal_list[i].rect);
-    }
-
-    grid[_l][_x][_y].normal_area = temp_area;
-}
 
 void Layout::set_rules(const vector<rule> &_rules)
 {
@@ -757,19 +741,6 @@ bool Layout::DRC_check_space()
 
 
 
-void Layout::dump_fill_list()
-{
-    cout << "dump fill list" << endl;
-    for (auto v : fill_list)
-    {
-        cout << v.rect.bl_x << " "
-             << v.rect.bl_y << " "
-             << v.rect.tr_x << " "
-             << v.rect.tr_y << " "
-             << v.net_id << " "
-             << v.layer << endl;
-    }
-}
 
 // dump bin into two files
 // Inputs: layer index, and bin index x and y
