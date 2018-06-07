@@ -46,6 +46,5 @@ private:
 int area_overlap(const Rectangle &_r1, const Rectangle &_r2);
 bool check_space(const Rectangle &_r1, const Rectangle &_r2, int margin);
 Rectangle rect_overlap(const Rectangle &_r1, const Rectangle &_r2); 
-Rectangle rect_resize(const Rectangle &_in, double lf=0, double dw=0, double rt=0, double up=0);
-
+Rectangle rect_resize(const Rectangle &_in, double lf=0.0, double dw=0.0, double rt=0.0, double up=0.0);
 #endif

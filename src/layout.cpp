@@ -540,8 +540,6 @@ void Layout::DRC_check_width()
     cout << "//=== start DRC check ===//" << endl;
 
     int width_check_fail_count = 0;
-    int width_x;
-    int length_y;
     int layer;
 
     cout << "//=== DRC: check min_width and max_fill_width of fill ===//" << endl;
@@ -550,8 +548,11 @@ void Layout::DRC_check_width()
         layer = fill_list[i].layer;
 
         if (fill_list[i].rect.check_width(min_width[layer], 
-                                max_fill_width[layer]) == false)
+                                max_fill_width[layer]) == false) {
             width_check_fail_count++;
+            cout << i << " " << layer << " ";
+            fill_list[i].rect.dump();
+        }                            
     }
     cout << "total fill: " << fill_list.size() << endl;
     cout << "width check fail " << width_check_fail_count << endl;
@@ -676,6 +677,65 @@ bool Layout::DRC_check_space()
     return all_pass;
 }
 
+
+bool Layout::one_net_DRC_check_space(Layout::net _net)
+{
+    // return value of check space value
+    bool check_space_pass;
+    
+    // store index of fill in each window
+    vector<int> fill_idx;
+
+    // store index of normal in each window
+    vector<int> normal_idx;
+
+    Rectangle temp_rect;
+    Rectangle bin_index;
+
+    int layer = _net.layer;
+    bin_index.bl_x = _net.rect.bl_x / bin_size;
+    bin_index.bl_y = _net.rect.bl_y / bin_size;
+    bin_index.tr_x = (_net.rect.tr_x - 1) / bin_size;
+    bin_index.tr_y = (_net.rect.tr_y - 1) / bin_size;
+
+    fill_idx.clear();
+    normal_idx.clear();
+
+    for (int x = bin_index.bl_x; x <= bin_index.tr_x; x++) {
+        for (int y = bin_index.bl_y; y <= bin_index.tr_y; y++) {
+            for (auto idx : *(grid[layer][x][y].fill))        
+                fill_idx.push_back(idx);      
+            for (auto idx : *(grid[layer][x][y].normal))
+                normal_idx.push_back(idx);
+        }
+    }
+
+    // erase duplicate fill index 
+    stable_sort(fill_idx.begin(), fill_idx.end());
+    fill_idx.erase(unique(fill_idx.begin(), fill_idx.end()), fill_idx.end());
+
+
+    // check min space bte new rectangle and normal 
+    for (auto n: normal_idx) {
+        check_space_pass = check_space(_net.rect, normal_list[n].rect, min_space[layer]);
+        if (!check_space_pass) {
+            return false;
+        }
+    }
+
+    // check min space bte new rectangle and fill 
+    for (auto f: fill_idx) {
+        check_space_pass = check_space(_net.rect, fill_list[f].rect, min_space[layer]);
+        if (!check_space_pass) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+
 void Layout::dump_fill_list()
 {
     cout << "dump fill list" << endl;
@@ -792,16 +852,6 @@ void Layout::fill_insertion()
                     fill_regions = find_fill_region_y(layer, i, j);
                 }
                 metal_fill(layer, fill_regions);
-                // 3,3 is minimum requirement for not violate DRC
-                //random_fill(layer, i, j, 3, 3);
-
-                // 6/4 added only for temproary check
-                //double density = ((double)grid[layer][i][j].normal_area +
-                //                    (double)grid[layer][i][j].fill_area) /
-                //                   (bin_size * bin_size);
-
-                //if (density <=  min_density[layer])
-                //     cout << layer << " " << i << " " << j << ": " << density << endl;
             }
         }
     }
@@ -825,6 +875,26 @@ void Layout::fill_insertion()
                 cout << layer << " " << i << " " << j << ": " << density << endl;
         }
     }
+
+    // 6/6 test random based fill on layer 9
+
+    cout << "Random Fill Start" << endl;
+    layer = 9;
+    for (int i = 0; i < range_x; i++)
+    {
+        for (int j = 0; j < range_y; j++)
+        {
+            random_fill(layer, i, j, 1);
+
+            double density = ((double)grid[layer][i][j].normal_area +
+                              (double)grid[layer][i][j].fill_area) /
+                             (bin_size * bin_size);
+
+            if (density <= min_density[layer])
+                cout << layer << " " << i << " " << j << ": " << density << endl;
+        }
+    }
+
 }
 
 void Layout::metal_fill(int layer, const vector<Rectangle> &fill_regions)
@@ -1443,3 +1513,87 @@ vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j, int s)
     return fill_regions;
 }
 
+
+// 6/6b new random fill
+// int s: number of bins s = 1: bin based, s = 2 window based
+// this function directly fill the possible filling regions 
+// no metal call is needed after this function
+void Layout::random_fill(int layer, int i, int j, int s)
+{
+    bool check;
+    Rectangle bin_rect;
+    bin_rect.set_rectangle(i * bin_size, j * bin_size, (i+s) * bin_size, (j+s) * bin_size);
+    
+    int step = 10; // 06/06 will add random seed to determin step
+
+    net net_temp;
+    net_temp.layer = layer;
+    net_temp.net_id = 0;
+
+    int x_bl_low = bin_rect.bl_x + min_width[layer];
+    int x_bl_high = bin_rect.tr_x-2*min_width[layer];
+    int y_bl_low = bin_rect.bl_y + min_width[layer];
+    int y_bl_high = bin_rect.tr_y-2*min_width[layer];
+
+    // iterate all possible bl_x and bl_y to fill in the bin_rect
+    for (int x = x_bl_low; x <= x_bl_high; x = x + step) {
+        for (int y = y_bl_low; y <= y_bl_high; y = y + step) {
+            // create a temp net
+            net_temp.rect.set_rectangle(x, y, x+min_width[layer], y+min_width[layer]);
+
+            // check if it can fill in layout 
+            check = one_net_DRC_check_space(net_temp);
+
+            // cannot fill, give up random expand
+            if (check == true ) {
+                random_expand(net_temp, layer, i, j, s, step, "lf");
+                random_expand(net_temp, layer, i, j, s, step, "rt");
+                random_expand(net_temp, layer, i, j, s, step, "dw");
+                random_expand(net_temp, layer, i, j, s, step, "up");
+                
+                fill_list.push_back(net_temp);
+                assign_fill(metal_fill_count);
+                metal_fill_count++;
+            }
+        }
+    }   
+}
+
+void Layout::random_expand(Layout::net& _net, int layer, int i, int j, int s, int step, string mode)
+{
+    net net_expand;
+    bool check_expand;
+
+    Rectangle bin_rect( i * bin_size + min_width[layer], 
+                        j * bin_size + min_width[layer], 
+                        (i+s) * bin_size - min_width[layer], 
+                        (j+s) * bin_size - min_width[layer]);
+
+    net_expand = _net;
+    check_expand = true;
+    while (check_expand == true) {
+        if (mode == "lf")
+            net_expand.rect.bl_x -= step;
+        if (mode == "rt")
+            net_expand.rect.tr_x += step;
+        if (mode == "dw")
+            net_expand.rect.bl_y -= step;
+        if (mode == "up") 
+            net_expand.rect.tr_y += step;
+        
+        // check spaceing 
+        check_expand = one_net_DRC_check_space(net_expand);
+
+        // check if inside bin        
+        if (area_overlap(net_expand.rect, bin_rect) != net_expand.rect.area())
+            check_expand = false;
+
+        // check max width
+        if (net_expand.rect.check_width(min_width[layer], 
+                                        max_fill_width[layer]) == false)
+            check_expand = false;
+
+        if (check_expand == true) 
+            _net = net_expand;
+    }
+}

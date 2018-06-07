@@ -98,6 +98,15 @@ public:
     // select a bin and dump it into two files 
     void dump_bin(int layer, int offset_x, int offset_y);
 
+
+    // random fill
+    void random_fill(int layer, int i, int j, int s);
+    void random_expand(net& _net, int layer, int i, int j, int s, int step, string mode);
+
+    // no net check space
+    bool one_net_DRC_check_space(net _net);
+
+
     // list of nets 
     // normal_list[0] stores "layout boundary"
     // both boundary and all nets are normalized by offset
@@ -121,7 +130,6 @@ private:
 
     // 6/01
     int metal_fill_count = 0;
-    int random_fill_count = 0;
 
     
 };
