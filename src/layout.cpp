@@ -559,123 +559,6 @@ void Layout::DRC_check_width()
     cout << "----------------------------" << endl;
 }
 
-// check min_space btw fill & normal, fill & fill
-/***********************************************/
-bool Layout::one_window_DRC_check_space(int layer, int i, int j, int s)
-{
-    // return value of check space value
-    bool check_space_pass;
-
-    // store index of fill and normal
-    int a, b;
-
-    // store index of fill in each window
-    vector<int> fill_idx;
-
-    // store index of normal in each window
-    vector<int> normal_idx;
-
-    fill_idx.clear();
-    normal_idx.clear();
-
-    // Read the index of all fill overlap with window
-    for (int i1 = 0; i1 < s; i1++)
-    {
-        for (int j1 = 0; j1 < s; j1++)
-        {
-            for (auto idx : *(grid[layer][i+i1][j+j1].fill))
-            {
-                fill_idx.push_back(idx);
-            }
-        }
-    }
-
-    stable_sort(fill_idx.begin(), fill_idx.end());
-    fill_idx.erase(unique(fill_idx.begin(), fill_idx.end()), fill_idx.end());
-
-    // Read the index of all normal overlap with window
-    for (int i1 = 0; i1 < s; i1++)
-    {
-        for (int j1 = 0; j1 < s; j1++)
-        {
-            for (auto idx : *(grid[layer][i+i1][j+j1].normal))
-            {
-                normal_idx.push_back(idx);
-            }
-        }
-    }
-
-    // check min_space btw fill & normal
-    for (int fill_x = 0; fill_x < fill_idx.size(); fill_x++)
-    {
-
-        a = fill_idx[fill_x];
-        for (int normal_y = 0; normal_y < normal_idx.size(); normal_y++)
-        {
-            b = normal_idx[normal_y];
-            //cout << "min space = " << min_space[layer] << endl;
-            check_space_pass = check_space(fill_list[a].rect, normal_list[b].rect, min_space[layer]);
-            if (!check_space_pass)
-            {
-                cout << " fill and normal check space voilate" << endl;
-                return 0;
-            }
-        }
-    }
-    // check min_space btw fill & fill
-    for (int fill_x = 0; fill_x < fill_idx.size(); fill_x++)
-    {
-        a = fill_idx[fill_x];
-        for (int fill_y = fill_x + 1; fill_y < fill_idx.size(); fill_y++)
-        {
-            b = fill_idx[fill_y];
-            check_space_pass = check_space(fill_list[a].rect, fill_list[b].rect, min_space[layer]);
-            if (!check_space_pass)
-            {
-                //cout << " fill and fill check space voilate" << endl;
-                cout << "num" << layer << " " << i << " " << j << " ";
-                cout << "this two violate min sapce = " << min_space[layer] << endl;
-                fill_list[fill_x].rect.dump();
-                fill_list[fill_y].rect.dump();
-
-                return 0;
-            }
-        }
-    }
-    return 1;
-}
-
-bool Layout::DRC_check_space()
-{
-    bool one_pass;
-    bool all_pass;
-    int range_x = normal_list[0].rect.tr_x / bin_size;
-    int range_y = normal_list[0].rect.tr_y / bin_size;
-
-    all_pass = 1;
-    cout << "//=== DRC check space ===//" << endl;
-    for (int layer = 1; layer <= 9; layer++)
-    {
-        for (int i = 0; i < range_x - 1; i++)
-        {
-            for (int j = 0; j < range_y - 1; j++)
-            {
-                one_pass = one_window_DRC_check_space(layer, i, j);
-                if (!one_pass)
-                {
-                    all_pass = 0;
-                }
-            }
-        }
-    }
-
-    if (all_pass == 0)
-        cout << "DRC check space fail" << endl;
-    else
-        cout << "DRC check space pass" << endl;
-
-    return all_pass;
-}
 
 
 bool Layout::one_net_DRC_check_space(const Layout::net& _net)
@@ -733,6 +616,137 @@ bool Layout::one_net_DRC_check_space(const Layout::net& _net)
 
     return true;
 }
+
+
+// check min_space btw fill & normal, fill & fill
+/***********************************************/
+bool Layout::one_window_DRC_check_space(int layer, int i, int j, int s)
+{
+    // return value of check space value
+    bool check_space_pass;
+
+    // store index of fill and normal
+    //int a, b;
+
+    // store index of fill in each window
+    vector<int> fill_idx;
+
+    // store index of normal in each window
+    vector<int> normal_idx;
+
+    fill_idx.clear();
+    normal_idx.clear();
+
+    // Read the index of all fill overlap with window
+    for (int i1 = 0; i1 < s; i1++)
+    {
+        for (int j1 = 0; j1 < s; j1++)
+        {
+            for (auto idx : *(grid[layer][i+i1][j+j1].fill))
+            {
+                fill_idx.push_back(idx);
+            }
+        }
+    }
+
+    stable_sort(fill_idx.begin(), fill_idx.end());
+    fill_idx.erase(unique(fill_idx.begin(), fill_idx.end()), fill_idx.end());
+
+    for (auto n: fill_idx) {
+        check_space_pass = one_net_DRC_check_space(fill_list[n]);
+        if (check_space_pass == false) {
+            cout << n <<" fill space voilate" << endl;    
+            return false;
+        }
+    }
+
+
+    return true;
+    /*
+    // Read the index of all normal overlap with window
+    for (int i1 = 0; i1 < s; i1++)
+    {
+        for (int j1 = 0; j1 < s; j1++)
+        {
+            for (auto idx : *(grid[layer][i+i1][j+j1].normal))
+            {
+                normal_idx.push_back(idx);
+            }
+        }
+    }
+
+    // check min_space btw fill & normal
+    for (int fill_x = 0; fill_x < fill_idx.size(); fill_x++)
+    {
+
+        a = fill_idx[fill_x];
+        for (int normal_y = 0; normal_y < normal_idx.size(); normal_y++)
+        {
+            b = normal_idx[normal_y];
+            //cout << "min space = " << min_space[layer] << endl;
+            check_space_pass = check_space(fill_list[a].rect, normal_list[b].rect, min_space[layer]);
+            if (!check_space_pass)
+            {
+                cout << " fill and normal check space voilate" << endl;
+                return 0;
+            }
+        }
+    }
+    // check min_space btw fill & fill
+    for (int fill_x = 0; fill_x < fill_idx.size(); fill_x++)
+    {
+        a = fill_idx[fill_x];
+        for (int fill_y = fill_x + 1; fill_y < fill_idx.size(); fill_y++)
+        {
+            b = fill_idx[fill_y];
+            check_space_pass = check_space(fill_list[a].rect, fill_list[b].rect, min_space[layer]);
+            if (!check_space_pass)
+            {
+                //cout << " fill and fill check space voilate" << endl;
+                cout << "num" << layer << " " << i << " " << j << " ";
+                cout << "this two violate min sapce = " << min_space[layer] << endl;
+                fill_list[fill_x].rect.dump();
+                fill_list[fill_y].rect.dump();
+
+                return 0;
+            }
+        }
+    }*/
+
+}
+
+bool Layout::DRC_check_space()
+{
+    bool one_pass;
+    bool all_pass;
+    int range_x = normal_list[0].rect.tr_x / bin_size;
+    int range_y = normal_list[0].rect.tr_y / bin_size;
+
+    all_pass = 1;
+    cout << "//=== DRC check space ===//" << endl;
+    for (int layer = 1; layer <= 9; layer++)
+    {
+        for (int i = 0; i < range_x - 1; i++)
+        {
+            for (int j = 0; j < range_y - 1; j++)
+            {
+                one_pass = one_window_DRC_check_space(layer, i, j);
+                if (!one_pass)
+                {
+                    all_pass = 0;
+                }
+            }
+        }
+    }
+
+    if (all_pass == 0)
+        cout << "DRC check space fail" << endl;
+    else
+        cout << "DRC check space pass" << endl;
+
+    return all_pass;
+}
+
 
 
 
