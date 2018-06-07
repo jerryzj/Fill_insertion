@@ -53,13 +53,15 @@ int main(int argc ,char *argv[]){
     cout << endl;
     layout.fill_insertion();
     // dump specific in 
-    //layout.dump_bin(9, 0, 105);
 
 
     layout.window_based_density_check();
     layout.DRC_check_width();
     layout.DRC_check_space();
     layout.dump_statistic();
-    
+
+
+    layout.dump_bin(9, 69, 33);
+
     return 0;
 }

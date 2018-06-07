@@ -91,8 +91,10 @@ bool Rectangle::check_width(int min_width, int max_width)
     return true;
 }
 
-// resize and return a resized rectangle
-// enlarge if parameter is negative
+// by ratio
+// resize and return a resized rectangle 
+// enlarge if parameter is positive
+// reduce if parameter is negative
 Rectangle rect_resize(const Rectangle &_in, double lf, double dw, double rt, double up)
 {
     Rectangle _out;
@@ -102,10 +104,10 @@ Rectangle rect_resize(const Rectangle &_in, double lf, double dw, double rt, dou
 
     _out = _in;
 
-    _out.bl_x += lf * width_x;
-    _out.bl_y += dw * length_y;
-    _out.tr_x -= rt * width_x;
-    _out.tr_y -= up * length_y;
+    _out.bl_x -= lf * width_x;
+    _out.bl_y -= dw * length_y;
+    _out.tr_x += rt * width_x;
+    _out.tr_y += up * length_y;
 
     return _out;
 }
