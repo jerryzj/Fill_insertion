@@ -31,7 +31,18 @@ public:
         }
     };
      
-    Layout();
+    Layout(){
+        normal_list.reserve(3E5);
+        fill_list.reserve(3E5);
+        // pos 0 is empty
+        min_density.reserve(10);
+
+        min_width.reserve(10);
+
+        max_fill_width.reserve(10);
+
+        min_space.reserve(10);
+    }
     //*************************
     //     I/O, print info
     //*************************
@@ -147,7 +158,6 @@ private:
     vector<int> min_width;
     vector<int> max_fill_width;
     vector<int> min_space;
-    int metal_fill_count;
 };
 
 #endif

@@ -1,19 +1,6 @@
 #include "layout.hpp"
 #include "statistic.hpp"
 
-Layout::Layout()
-{
-    normal_list.reserve(3E5);
-    fill_list.reserve(3E5);
-    // pos 0 is empty
-    min_density.reserve(10);
-
-    min_width.reserve(10);
-
-    max_fill_width.reserve(10);
-
-    min_space.reserve(10);
-}
 
 // fill insertion algorition, use find fill region and metal fill
 void Layout::fill_insertion()
@@ -185,11 +172,10 @@ void Layout::metal_fill(int layer, const vector<Rectangle> &fill_regions)
                                                 fill_tr_x[a], fill_tr_y[b]);
                     fill_list.push_back(net_temp);
 
-                    // assign fill with ID = metal_fill_count to bin (s)
+                    // assign fill with ID = fill.size -1 to bin (s)
                     // to multiple bins if possible
                     // assign_fill increase fill area as well
-                    assign_fill(metal_fill_count);
-                    metal_fill_count++;
+                    assign_fill(fill_list.size()-1);
                 }
             }
         }
@@ -740,8 +726,7 @@ void Layout::random_fill(int layer, int i, int j, int s)
                 random_expand(net_temp, layer, i, j, s, step, "up");
                 
                 fill_list.push_back(net_temp);
-                assign_fill(metal_fill_count);
-                metal_fill_count++;
+                assign_fill(fill_list.size()-1);
             }
         }
     }   
