@@ -20,10 +20,6 @@ void Layout::fill_sort() {
                 return lhs.layer < rhs.layer;
             });
 
-
-
-
-
 }
 
 void Layout::fill_remapping() {
@@ -44,4 +40,23 @@ void Layout::fill_remapping() {
     for (int i = 0; i < (int)fill_list.size(); i++)
         assign_fill(i);    
 
+}
+
+void Layout::set_critical(const vector<int>& list){
+    for(auto i: list){
+        critical_list.push_back(i);
+    }
+}
+
+bool Layout::Is_critical(int net_id){
+    vector<int>::iterator iter;
+    
+    iter = std::find(critical_list.begin(),
+                     critical_list.end(), net_id);
+    if(iter == critical_list.end()){
+        return false;
+    }
+    else{
+        return true;
+    }
 }

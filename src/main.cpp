@@ -45,16 +45,15 @@ int main(int argc ,char *argv[]){
     //layout.dump();
     // Temporary set bin size = 5000
     layout.set_bin_size(5000);
+    // set critical net list in layout class 
+    layout.set_critical(config.critical_nets);
+    // set DRC rules
+    layout.set_rules(rule.rules);
+    // create 3D bin structure
     layout.create3Dbin();
     layout.bin_mapping();
-    
-    layout.set_rules(rule.rules);   // input vector<rule>
-
-    cout << endl;
     layout.fill_insertion();
-    // dump specific in 
-
-
+    // Checking
     layout.window_based_density_check();
     layout.DRC_check_width();
     layout.DRC_check_space();
