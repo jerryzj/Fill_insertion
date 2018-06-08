@@ -16,6 +16,7 @@ int main(int argc ,char *argv[]){
     // Parser class 
     readconfig config;  // circuit config file
     readrule rule;      // rule.dat file
+    readprocess process;
     Layout layout;
     // Variables
     size_t pos;         // position of certain char
@@ -42,7 +43,12 @@ int main(int argc ,char *argv[]){
     // cout<<filename;
     // for testing 
     layout.read_file((char*)filename.c_str());
+    // read process file
     //layout.dump();
+    pos = filename.find_last_of('/');
+    filename.replace(pos+1,filename.length()-pos,config.process);
+    process.read_file((char*) filename.c_str());
+   
     // Temporary set bin size = 5000
     layout.set_bin_size(5000);
     // set critical net list in layout class 
