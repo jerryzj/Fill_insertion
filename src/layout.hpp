@@ -83,12 +83,14 @@ public:
     //     Fill reordering
     //*************************  
 
+    // set critical list from config file
+    void set_critical(const vector<int>& list);
     // remove invalid fill metal and sort 
     void fill_sort();
     // remap the sorted fill list to Bin (named "grid")
     void fill_remapping();
     // check if a net is critical net
-    bool Is_critical(int net_id, vector<int>& list);
+    bool Is_critical(int net_id);
     
     //*************************
     //Fill insertion Algorithms  
@@ -158,6 +160,7 @@ private:
     vector<int> min_width;
     vector<int> max_fill_width;
     vector<int> min_space;
+    vector<int> critical_list;  // list of crfitical nets
 };
 
 #endif
