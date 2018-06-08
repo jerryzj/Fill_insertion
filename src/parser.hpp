@@ -56,12 +56,16 @@ class readprocess{
     // read process file
     void read_file(char* filename);
     // find area capacitance
-    double find_area(int x, int y);
+    double find_area(int x, int y, int area);
     // find lateral capacintance
-    double find_lateral(int x);
+    double find_lateral(int x, int distance, int parallel_edge);
     // find fringe capacintance
-    double find_fringe(int x, int y);
-    
+    double find_fringe(int x, int y, int distance, int parallel_edge);
+    // Debug
+    void dump();
+    // window size (for DRC)
+    int window_size;
+
     private:
     enum table_type{
         area, lateral, fringe
@@ -69,7 +73,6 @@ class readprocess{
 
     struct table{
         string name;
-        table_type type;
         vector<int> ranges;
         vector<double> alpha;
         vector<double> beta;
@@ -80,8 +83,6 @@ class readprocess{
             beta.reserve(11);
         }
     };
-
-    int window_size;
     // generate a string as the key to search cap_table
     string key_gen(int x,int y, table_type type);
     map<string, table> cap_table;
