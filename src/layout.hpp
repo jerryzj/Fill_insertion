@@ -17,6 +17,12 @@ public:
         Rectangle rect; 
         int net_id;
         int layer;      // layer 1~9
+        double cost;
+        net(){
+            net_id = 0;
+            layer = 0;
+            cost = 0;
+        }
     };
     struct bin{
         vector<int>* normal;
@@ -111,6 +117,8 @@ public:
     void random_fill(int layer, int i, int j, int s=1);
     // Expand fill area, only called by random
     void random_expand(net& _net, int layer, int i, int j, int s, int step, string mode);
+    // find cost of an added fill metal
+    double find_cost(const readprocess& process, const Rectangle& _rec);
 
     //*************************
     //      Rule checking  
