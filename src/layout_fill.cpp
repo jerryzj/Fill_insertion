@@ -765,3 +765,31 @@ void Layout::random_expand(Layout::net& _net, int layer, int i, int j, int s, in
             _net = net_expand;
     }
 }
+
+
+double find_cost(const readprocess& process, Rectangle& _rec, int layer){
+    int search_layer = 0;
+    double cost;
+    net temp = fill_list[fill_id];
+    Rectangle search_bin;
+    Rectangle temp_rec;
+
+
+    search_bin.bl_x = _rect.bl_x / bin_size;
+    search_bin.bl_y = _rect.bl_y / bin_size;
+    search_bin.tr_x = (_rect.tr_x - 1) / bin_size;
+    search_bin.tr_y = (_rect.tr_y - 1) / bin_size;
+
+    if(temp.layer == 9){
+        return 0;
+    }
+    else{
+        for(int i = search_bin.bl_x; i < search_bin.tr_x; i++){
+            for(int j = search_bin.bl_y; j < search_bin.tr_y; j++){
+                for(auto k : grid[layer-1][i][j].fill){
+                    temp_rec = fill_list[k]
+                }
+            }
+        }
+    }
+}

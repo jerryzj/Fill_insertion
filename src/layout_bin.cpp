@@ -111,6 +111,7 @@ void Layout::delete_fill(int i){
 }
 
 // fill index and the destinate rectangle
+// only work for metal fill within a bin
 void Layout::resize_fill(int i, const Rectangle& r_new){
     int layer;
     int area_org;

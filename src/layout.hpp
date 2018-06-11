@@ -120,7 +120,7 @@ public:
     // Expand fill area, only called by random
     void random_expand(net& _net, int layer, int i, int j, int s, int step, string mode);
     // find cost of an added fill metal
-    double find_cost(const readprocess& process, const Rectangle& _rec);
+    double find_cost(const readprocess& process, Rectangle& _rec, int layer);
 
     //*************************
     //      Rule checking  
