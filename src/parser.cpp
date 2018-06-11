@@ -143,9 +143,6 @@ void readrule::dump(){
 
 readprocess::readprocess(){
     window_size = 0;
-    //area_table.reserve(45);
-    //fringe_table.reserve(20);
-    //lateral_table.reserve(9);
 }
 
 string readprocess::key_gen(int x,int y, table_type type){
@@ -198,6 +195,9 @@ string readprocess::key_gen(int x,int y, table_type type){
 void readprocess::read_file(char* filename){
     ifstream file(filename);
     string temp;
+    double n = 0;
+    double alpha = 0;
+    double beta = 0;
     size_t pos;
 
     // lateral table only has 9 
@@ -206,26 +206,280 @@ void readprocess::read_file(char* filename){
         cerr<<"Can't open process file\n";
         exit(-1);
     }
-    // read first commented line and ignore it
+    // 1. read first commented line and ignore it
     getline(file, temp);
-    // read window size
+    // 2. read window size
     getline(file, temp);
     pos = temp.find(' ');
     temp = temp.substr(++pos);
     window_size = stoi(temp);
-    cout<<window_size<<endl;
-    // read two commented lines
+    // 3. read two commented lines
     getline(file, temp);
     getline(file, temp);
+    // 4. skip table (use key_gen to reconstruct it)
+    for(int i = 0; i < 12; i++){
+        getline(file, temp);
+    }
+    // 5. skip table definitions
     getline(file, temp);
-    cout<<temp;        
-    //while(getline(file,temp)){
-        /* if(temp[0] == ';'){
-            cout<<"This line should be ignored\n";
-            cout<<"//"<<temp;
-        } */
-      //  temp.append("\n");
-        //cout << temp;
+    if(temp[0] != ';') cerr<<"This line is not commented!\n";
+    getline(file, temp);
+    if(temp[0] != ';') cerr<<"This line is not commented!\n";    
+    getline(file, temp);        
+    if(temp[0] != ';') cerr<<"This line is not commented!\n";
+    getline(file, temp);        
+    // 6. read tables
+    // 6-1 read table name
+    while(getline(file, temp)){
+        if(temp[0] == ';'){ // ignore commented line
+            continue;
+        }
+        else if(temp.length() == 0){ // ignore blank line
+            continue;
+        }
+        else{   // read table
+            table t;
+            pos = temp.find(' ');
+            t.name = temp.substr(++pos);
+            //debug
+            //cout<<t.name<<endl;
+            // 6-2 read commented line
+            //ex: ; unit area cap table
+            getline(file, temp);
+            if(temp[0] != ';') cerr<<"This line is expected to be commented!\n";
+            // 6-3 read range
+            getline(file, temp);
+            //cout<<temp<<endl;
+            stringstream stream(temp);
+            while(stream >> n){
+                t.ranges.push_back((int)n);
+            }
+            // 6-4 read parameters
+            getline(file, temp);
+            istringstream ss(temp);
+            string token;    
+            while(getline(ss, token, ')')){
+                //cout<<token<<endl;
+                pos = token.find('(');
+                token = token.substr(++pos);
+                //cout<<token<<endl;
+                pos = token.find(',');
+                alpha = stod(token.substr(0, pos));
+                //cout<<alpha<<endl;
+                beta = stod(token.substr(++pos));
+                //cout<<beta<<endl;
+                t.alpha.push_back(alpha);
+                t.beta.push_back(beta);
+            }
+            // 6-5 insert table t to map
+            cap_table.insert(pair<string, table>(t.name,t));
+            // 6-6 read blank line
+            getline(file, temp);
+        }
+        temp.clear();
+    }
+    // 7. close file 
+    file.close();
+}
 
-    //}
+void readprocess::dump(){
+    map<string, table>::iterator iter;    
+    int counter = 0;
+    for(iter = cap_table.begin(); iter != cap_table.end();iter++){
+        ++counter;
+        cout<<"Map key :"<<iter->first<<endl;
+        cout<<"Map value :"<<endl;
+        cout<<"  name : "<<iter->second.name<<endl;
+        cout<<"  ranges"<<"\n  ";
+        for(auto i : iter->second.ranges){
+            cout<<i<<" ";
+        }
+        cout<<endl;
+        cout<<"  alpha"<<"\n  ";
+        for(auto i : iter->second.alpha){
+            cout<<i<<" ";
+        }
+        cout<<endl;
+        cout<<"  beta"<<"\n  ";
+        for(auto i : iter->second.beta){
+            cout<<i<<" ";
+        }
+        cout<<endl;
+    }
+    cout<<"Number of table : "<<counter<<endl;
+}
+
+double readprocess::find_area(int x, int y, int area){
+    double alpha = 0;
+    double beta = 0;
+    double c_init = 0;
+    double ans = 0;
+    string key;
+    map<string,table>::iterator iter;
+    
+    // generate key
+    if(x == 0){
+        key.assign("area_table_"+to_string(y)+"_"+to_string(x));
+    }
+    else if(x == 1){
+        key.assign("area_table_"+to_string(x)+"_"+to_string(y));
+    }
+    else if (x > y){
+        key.assign("area_table_"+to_string(y)+"_"+to_string(x));
+    }
+    else{
+        key.assign("area_table_"+to_string(x)+"_"+to_string(y));
+    }
+    //debug
+    //cout<<key<<endl;
+
+    iter = cap_table.find(key);
+    if(iter == cap_table.end()){
+        cerr<<"Can't find this table in cap_table\n";
+        cerr<<"Key :"<<key<<endl;
+        exit(-1);
+    }
+    else{
+        if(key != iter->second.name){
+            cerr<<"Error! Key mismatches table name\n";
+            exit(-1);
+        }
+        if(area >= iter->second.ranges.back()){
+            alpha = iter->second.alpha.back();
+            beta  = iter->second.beta.back();
+            c_init = (alpha * iter->second.ranges.back()) + beta;
+            ans = c_init * ((double)area / iter->second.ranges.back());
+        }
+        else if(area <= iter->second.ranges.front()){
+            alpha = iter->second.alpha.front();
+            beta  = iter->second.beta.front();
+            c_init = (alpha * iter->second.ranges.front()) + beta;
+            ans = c_init * ((double)area / iter->second.ranges.front());
+        }
+        else{
+            for(int i = 0; i < iter->second.ranges.size() - 1; i++){
+                if(iter->second.ranges[i] <= area && iter->second.ranges[i+1] > area){
+                    alpha = iter->second.alpha[i];
+                    beta  = iter->second.beta[i];
+                    break; 
+                }
+            }
+            c_init = (alpha * area) + beta;
+            ans = c_init * area;
+        }
+    }
+    // debug
+    //cout<<"Alpha = "<<alpha<<endl;
+    //cout<<"Beta = "<<beta<<endl;
+    //cout<<"C-init = "<<c_init<<endl;
+    return ans;
+}
+
+double readprocess::find_lateral(int x, int distance, int parallel_edge){
+    double alpha = 0;
+    double beta = 0;
+    double c_init = 0;
+    double ans = 0;
+    string key;
+    map<string,table>::iterator iter;
+
+    // generate key
+    key.assign("lateral_table_"+to_string(x));
+    // search map
+    iter = cap_table.find(key);
+    if(iter == cap_table.end()){
+        cerr<<"Can't find this table in cap_table\n";
+        cerr<<"Key :"<<key<<endl;
+        exit(-1);
+    }
+    else{
+        if(distance < iter->second.ranges.front() || distance > iter->second.ranges.back()){
+            return 0;
+        }
+        else{
+            for(int i = 0; i < iter->second.ranges.size() - 1; i++){
+                if(iter->second.ranges[i] <= distance && iter->second.ranges[i+1] >= distance){
+                    alpha = iter->second.alpha[i];
+                    beta  = iter->second.beta[i]; 
+                    break;
+                }
+            }
+            c_init = (alpha * distance) + beta;
+            ans = c_init * parallel_edge;
+        }
+    }
+    // debug
+    //cout<<"Alpha = "<<alpha<<endl;
+    //cout<<"Beta = "<<beta<<endl;
+    //cout<<"C-init = "<<c_init<<endl;
+    return ans;
+}
+
+double readprocess::find_fringe(int x, int y, int distance, int parallel_edge){
+    double alpha = 0;
+    double beta = 0;
+    double c_init = 0;
+    double ans = 0;
+    string key;
+    map<string,table>::iterator iter;
+    
+    // generate key; 
+    key.assign("fringe_table_"+to_string(x)+"_"+to_string(y));
+    // search map using key
+    iter = cap_table.find(key);
+    if(iter == cap_table.end()){
+        cerr<<"Can't find this table in cap_table\n";
+        cerr<<"Key :"<<key<<endl;
+        exit(-1);
+    }
+    else{
+        if(distance < iter->second.ranges.front() || distance > iter->second.ranges.back()){
+            ans += 0;
+        }
+        else{
+            for(int i = 0; i < iter->second.ranges.size() - 1; i++){
+                if(iter->second.ranges[i] <= distance && iter->second.ranges[i+1] > distance){
+                    alpha = iter->second.alpha[i];
+                    beta  = iter->second.beta[i]; 
+                    break;
+                }
+            }
+            c_init = (alpha * distance) + beta;
+            ans += c_init * parallel_edge;
+        }
+    }
+    // debug
+    cout<<"Alpha = "<<alpha<<endl;
+    cout<<"Beta = "<<beta<<endl;
+    cout<<"C-init = "<<c_init<<endl;
+
+    //search map using another key
+    key.assign("fringe_table_"+to_string(y)+"_"+to_string(x));
+    iter = cap_table.find(key);
+    if(iter == cap_table.end()){
+        cerr<<"Can't find this table in cap_table\n";
+        cerr<<"Key :"<<key<<endl;
+        exit(-1);
+    }
+    else{
+        if(distance < iter->second.ranges.front() || distance > iter->second.ranges.back()){
+            ans += 0;
+        }
+        else{
+            for(int i = 0; i < iter->second.ranges.size() - 1; i++){
+                if(iter->second.ranges[i] <= distance && iter->second.ranges[i+1] > distance){
+                    alpha = iter->second.alpha[i];
+                    beta  = iter->second.beta[i]; 
+                    break;
+                }
+            }
+            c_init = (alpha * distance) + beta;
+            ans += c_init * parallel_edge;
+        }
+    }
+    // debug
+    //cout<<"Alpha = "<<alpha<<endl;
+    //cout<<"Beta = "<<beta<<endl;
+    //cout<<"C-init = "<<c_init<<endl;    
+    return ans;
 }

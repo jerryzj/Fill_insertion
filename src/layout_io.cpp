@@ -125,32 +125,33 @@ void Layout::dump_bin(int layer, int x, int y){
                       (double)grid[layer][x][y].fill_area) /
                      (bin_size * bin_size);
 
-    string filename("density.txt");
+    
+    // Dump bin density file
+    string filename("statistics.txt");
     density_file.open(filename.c_str(), ios::out);
-    if (!density_file)
-    {
+    if (!density_file){
         cerr << "Error create density file\n";
         exit(-1);
     }
     temp.assign(to_string(density) + "\n");
     density_file.write(temp.c_str(), temp.length());
+    for(auto i : critical_list){
+        temp.assign(to_string(i) + "\n");
+        density_file.write(temp.c_str(), temp.length());
+    }
     density_file.close();
-
+    // Dump normal list
     filename.assign("normal.cut");
     normal_file.open(filename.c_str(), ios::out);
-    if (!normal_file)
-    {
+    if (!normal_file){
         cerr << "Error create bin_normal file\n";
         exit(-1);
     }
-
     temp.assign(bound.dump_string() + "; chip boundary\n");
-
     // write chip boundary to normal file
     normal_file.write(temp.c_str(), temp.length());
     // write normal poly info to normal_file
-    for (auto i : *(grid[layer][x][y].normal))
-    {
+    for (auto i : *(grid[layer][x][y].normal)){
         Rectangle temp = normal_list[i].rect;
         temp = rect_overlap(temp, bound);
 
@@ -160,23 +161,19 @@ void Layout::dump_bin(int layer, int x, int y){
         normal_file.write(s.c_str(), s.length());
     }
     normal_file.close();
-
+    // Dump fill list
     filename.assign("fill.cut");
     fill_file.open(filename.c_str(), ios::out);
-    if (!fill_file)
-    {
+    if (!fill_file){
         cerr << "Error create bin_fill file\n";
         exit(-1);
     }
     temp.assign(bound.dump_string() + "; chip boundary\n");
-
     // write chip boundary to fill file
     fill_file.write(temp.c_str(), temp.length());
-    for (auto i : *(grid[layer][x][y].fill))
-    {
+    for (auto i : *(grid[layer][x][y].fill)){
         Rectangle temp = fill_list[i].rect;
         temp = rect_overlap(temp, bound);
-
         string s(temp.dump_string() + " " +
                  to_string(fill_list[i].net_id) + " " +
                  "fill\n");

@@ -3,8 +3,7 @@
 
 
 // fill insertion algorition, use find fill region and metal fill
-void Layout::fill_insertion()
-{
+void Layout::fill_insertion(){
     int range_x = normal_list[0].rect.tr_x / bin_size;
     int range_y = normal_list[0].rect.tr_y / bin_size;
     vector<Rectangle> fill_regions;
