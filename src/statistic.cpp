@@ -20,8 +20,7 @@ double getStdDev(vector<double> data) {
     return sqrt(getVariance(data));
 }
 
-double median(vector<double> data)
-{
+double median(vector<double> data){
     sort(data.begin(), data.end());
 
     if (data.size() % 2 == 0) {

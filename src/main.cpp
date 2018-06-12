@@ -44,13 +44,12 @@ int main(int argc ,char *argv[]){
     // for testing 
     layout.read_file((char*)filename.c_str());
     // read process file
-    //layout.dump();
     pos = filename.find_last_of('/');
     filename.replace(pos+1,filename.length()-pos,config.process);
     process.read_file((char*) filename.c_str());
    
-    // Temporary set bin size = 5000
-    layout.set_bin_size(5000);
+    // 0613 : bin_size is set to window_size / 2
+    layout.set_bin_size(process.window_size / 2);
     // set critical net list in layout class 
     layout.set_critical(config.critical_nets);
     // set DRC rules
