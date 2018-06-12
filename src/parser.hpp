@@ -6,6 +6,8 @@
 #include <vector>
 #include <map>
 #include <string.h>
+#include "layout.hpp"
+#include "rectangle.hpp"
 
 using namespace std;
 
@@ -66,6 +68,10 @@ class readprocess{
     // window size (for DRC)
     int window_size;
 
+    friend class Layout;
+    friend class Rectangle;
+    friend double find_cost(readprocess& process, const Rectangle& _rec, int layer);
+
     private:
     enum table_type{
         area, lateral, fringe
@@ -89,4 +95,5 @@ class readprocess{
 
 }; 
 
+double find_cost(readprocess& process, const Rectangle& _rec, int layer);
 #endif
