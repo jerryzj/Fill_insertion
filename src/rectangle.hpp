@@ -5,7 +5,6 @@
 #include <vector>
 #include <string.h>
 #include <algorithm>
-#include "parser.hpp"
 
 using namespace std;
 
@@ -30,13 +29,12 @@ public:
 
 
     friend class Layout;   // class Layout can access private member
-    friend class Readprocess;
+    friend class readprocess;
     // calculate overlapped area between two rectangles
     friend int area_overlap(const Rectangle &_r1, const Rectangle &_r2);
     friend bool check_space(const Rectangle &_r1, const Rectangle &_r2, int margin);
     friend Rectangle rect_overlap(const Rectangle &_r1, const Rectangle &_r2); 
     friend Rectangle rect_resize(const Rectangle &_in, double lf, double dw, double rt, double up);
-    friend double find_cost(readprocess& process, const Rectangle& _rec, int layer);
     
 
 private: 
@@ -50,6 +48,5 @@ int area_overlap(const Rectangle &_r1, const Rectangle &_r2);
 bool check_space(const Rectangle &_r1, const Rectangle &_r2, int margin);
 Rectangle rect_overlap(const Rectangle &_r1, const Rectangle &_r2); 
 Rectangle rect_resize(const Rectangle &_in, double lf=0.0, double dw=0.0, double rt=0.0, double up=0.0);
-double find_cost(readprocess& process, const Rectangle& _rec, int layer);
 
 #endif

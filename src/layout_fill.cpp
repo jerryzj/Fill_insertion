@@ -1,7 +1,6 @@
 #include "layout.hpp"
 #include "statistic.hpp"
 
-
 // fill insertion algorition, use find fill region and metal fill
 void Layout::fill_insertion(){
     int range_x = normal_list[0].rect.tr_x / bin_size;
@@ -768,10 +767,10 @@ void Layout::random_expand(Layout::net& _net, int layer, int i, int j, int s, in
 
 
 double Layout::find_cost(readprocess& process, const Rectangle& _rec, int layer){
-    double cost;
+    double cost = 0.0;
     Rectangle search_bin;
-    int area_temp;
-    double cap_temp;
+    int area_temp = 0;
+    double cap_temp = 0.0;
 
     search_bin.bl_x = _rec.bl_x / bin_size;
     search_bin.bl_y = _rec.bl_y / bin_size;
