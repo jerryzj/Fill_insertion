@@ -12,7 +12,6 @@
 
 using namespace std;
 
-typedef pair<int, double> pairIntDouble;
 
 class Layout{
 public:    
