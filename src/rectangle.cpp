@@ -11,10 +11,27 @@ int Rectangle::area(){
     int area = (tr_x - bl_x) * (tr_y - bl_y);
 
     if (area <= 0){
-        cerr << "The rectangle has area <=0 " << endl;
+        cerr << "The rectangle has area <= 0 " << endl;
     }
     return area;
 }
+
+int Rectangle::width(){
+    int width = tr_x - bl_x;
+    if(width <= 0){
+        cerr << "The rectangle has width <= 0"<<endl;
+    }
+    return width;
+}
+
+int Rectangle::length(){
+    int length = tr_y - bl_y;
+    if(length <= 0){
+        cerr<< "The rectangle has length <= 0"<<endl;
+    }
+    return length;
+}
+
 
 int area_overlap(const Rectangle &_r1, const Rectangle &_r2){
     int area = 0;
