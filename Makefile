@@ -1,5 +1,5 @@
 # Makefile 
-SRC = src/main.cpp  src/parser.cpp src/rectangle.cpp src/statistic.cpp 
+SRC = src/main.cpp  src/rectangle.cpp src/parser.cpp  src/statistic.cpp 
 LAYOUT = src/layout_io.cpp src/layout_fill.cpp src/layout_rule.cpp src/layout_reorder.cpp src/layout_bin.cpp
 all:
 	clang++ -std=c++11 -Wall $(SRC) $(LAYOUT) -O3 -o main

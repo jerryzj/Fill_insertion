@@ -8,7 +8,6 @@
 #include "rectangle.hpp"
 #include "parser.hpp"   // in order to read rule file
 
-
 using namespace std;
 
 class Layout{
