@@ -841,6 +841,11 @@ void Layout::bin_optimization(readprocess& process, int layer, int i, int j){
             }
             else {
                 resize_fill(curr_index, min_rect);
+                int index = 0;
+                while(get<1>(CP_list[index]) < min_cp){
+                    index++;
+                }
+                CP_list.insert(CP_list.begin() + index, make_pair(curr_index, min_cp));
             }
         }
     }
