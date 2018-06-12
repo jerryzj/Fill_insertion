@@ -855,8 +855,7 @@ void Layout::bin_optimization(readprocess& process, int layer, int i, int j){
     bin& temp_bin = grid[layer][i][j];
     double temp_cost = 0.0;
     vector<pairIntDouble> CP_list;
-    bool reduce_flag = true;       // whether a rectangle is reduced or not  (might be remove)
-    int list_index = 0;            // index for CP_list (might be remove)
+    double ratio = 0.5;
 
     // initial cost assignment
     for(auto i : *(temp_bin.fill)){
@@ -872,119 +871,62 @@ void Layout::bin_optimization(readprocess& process, int layer, int i, int j){
     // sort by fill cost in descending order
     sort(CP_list.begin(), CP_list.end(),
                     [](const pair<int, double> &left, const pair<int, double> &right){
-                        return left.second > right.second;}
-    );
-    // maybe we need another termination condition
-    while((temp_bin.normal_area + temp_bin.fill_area) > target_area && list_index < CP_list.size()){
-        int fill_index = 0;
-        double curr_cost = 0.0;
-        double ratio_x = 0.0;
-        double ratio_y = 0.0;
-        bool DRC_stat = false;
-        vector<pairIntDouble> cut_CP_list(4);
-
-        if(reduce_flag == true){
-            // pick vector head, reset index and sort CP_list
-            list_index = 0;
-            sort(CP_list.begin(), CP_list.end(),
-                    [](const pair<int, double> &left, const pair<int, double> &right){
-                        return left.second > right.second;}
-            );
-        }
-        else{
-            ++list_index;
-        }
-        // pick by vector index
-        fill_index = CP_list[list_index].first;
-        curr_cost  = CP_list[list_index].second;             
-        Rectangle temp_rect(fill_list[fill_index].rect);
-        // determine width cut ratio
-        if(temp_rect.width() > (2 * min_width[layer])) ratio_x = 0.5;
-        else ratio_x = 0.7;
-        // determine length cut ratio
-        if(temp_rect.length() > (2 * min_width[layer])) ratio_y = 0.5;
-        else ratio_y = 0.7;
-        // try different ways to cut rectangle, left, down, right, up 
-        Rectangle cut_left  = rect_resize(temp_rect, ratio_x, 0, 0, 0);
-        Rectangle cut_down  = rect_resize(temp_rect, 0, ratio_y, 0, 0);
-        Rectangle cut_right = rect_resize(temp_rect, 0, 0, ratio_x, 0);
-        Rectangle cut_up    = rect_resize(temp_rect, 0, 0, 0, ratio_y);
-        // After cutting rectangle in different ways
-        // check DRC, if cut ratio = 0.5, width check must pass
-        if(ratio_x == 0.7){
-            // do DRC
-            DRC_stat = cut_left.check_width(min_width[layer],max_fill_width[layer]);
-            if(DRC_stat == true){
-                // find cost and calculate C/P
-                double cost_left  = find_cost(process, cut_left,  layer);
-                cost_left = cost_left / (double) cut_left.area();
-                cut_CP_list.push_back(make_pair(1,cost_left));
-            }
-            DRC_stat = cut_right.check_width(min_width[layer],max_fill_width[layer]);
-            if(DRC_stat == true){
-                double cost_right  = find_cost(process, cut_right,  layer);
-                cost_right = cost_right / (double) cut_right.area();
-                cut_CP_list.push_back(make_pair(3,cost_right));
-            }
-        }
-        else{
-            double cost_left   = find_cost(process, cut_left,  layer);
-            cost_left = cost_left / (double) cut_left.area();
-            cut_CP_list.push_back(make_pair(1,cost_left));
-
-            double cost_right  = find_cost(process, cut_right,  layer);
-            cost_right = cost_right / (double) cut_right.area();
-            cut_CP_list.push_back(make_pair(3,cost_right));
-        }
-        if(ratio_y == 0.7){
-            // do DRC
-            DRC_stat = cut_down.check_width(min_width[layer],max_fill_width[layer]);
-            if(DRC_stat == true){            
-                double cost_down  = find_cost(process, cut_down,  layer);
-                cost_down = cost_down / (double) cut_down.area();
-                cut_CP_list.push_back(make_pair(2,cost_down));       
-            }
-            DRC_stat = cut_up.check_width(min_width[layer],max_fill_width[layer]);
-            if(DRC_stat == true){            
-                double cost_up    = find_cost(process, cut_up,    layer);
-                cost_up = cost_up / (double) cut_up.area();
-                cut_CP_list.push_back(make_pair(4,cost_up));
-            }
-        }
-        else{
-            double cost_down  = find_cost(process, cut_down,  layer);
-            cost_down = cost_down / (double) cut_down.area();
-            cut_CP_list.push_back(make_pair(2,cost_down));
-
-            double cost_up    = find_cost(process, cut_up,    layer);
-            cost_up = cost_up / (double) cut_up.area();
-            cut_CP_list.push_back(make_pair(4,cost_up));   
-        }
-        // If all the cut rectangles failed, continue
-        if(cut_CP_list.empty() == true){
-            reduce_flag = false;
-            continue;
-        }
-        else{
-            // sort by fill cost in ascending order
-            sort(cut_CP_list.begin(), cut_CP_list.end(),
-                    [](const pair<int, double> &left, const pair<int, double> &right){
                         return left.second < right.second;}
-            ); 
-            // If C/P > current C/P, continue
-            // Else replace with the new rectangle
-            if(cut_CP_list[0].second > curr_cost){
-                reduce_flag = false;
-                continue;
-            }
-            else{
-                reduce_flag = true;
-                switch(cut_CP_list[0].first){
-                    case 1: resize_fill(fill_index, cut_left ); break;
-                    case 2: resize_fill(fill_index, cut_down ); break;
-                    case 3: resize_fill(fill_index, cut_right); break;
-                    case 4: resize_fill(fill_index, cut_up   ); break;
+    );
+
+    // maybe we need another termination condition
+    while((temp_bin.normal_area + temp_bin.fill_area) > target_area && CP_list.size() > 0){
+
+        int curr_index;
+        double curr_cost;
+ 
+        curr_index = get<0>(CP_list.back());
+        curr_cost  = get<1>(CP_list.back());
+
+        CP_list.pop_back();
+
+        Rectangle temp_rect(fill_list[curr_index].rect);
+        // determine width cut ratio
+        vector<Rectangle> candidate;
+
+        // due to quantization error for "double", 
+        // the condition must be more conservative
+        // 1. horizantal resize 
+        if ((1.0-ratio)*temp_rect.width()*0.95 >= min_width[layer]) {
+            candidate.push_back(rect_resize(temp_rect, ratio, 0, 0, 0));
+            candidate.push_back(rect_resize(temp_rect, 0, 0, ratio, 0));
+        }
+        // 2. vertical resize 
+        if ((1.0-ratio)*temp_rect.length()*0.95 >= min_width[layer]) {
+            candidate.push_back(rect_resize(temp_rect, 0, ratio, 0, 0));
+            candidate.push_back(rect_resize(temp_rect, 0, 0, 0, ratio));
+        }
+        // may add more resize methods 
+
+        // if no available resize method
+        // delete the fill
+        double min_cp;
+        Rectangle min_rect;
+
+        if (candidate.size() == 0) {
+            delete_fill(curr_index);
+        }
+        else {
+            // find smallest cp = cost/area
+            min_cp = 1.0E10;
+            for (auto c : candidate) {
+                double new_cost = find_cost(process, c, layer); 
+                if (min_cp > new_cost) {
+                    min_cp = new_cost;
+                    min_rect = c;
                 }
+            }
+
+            if (min_cp > curr_cost) {
+                delete_fill(curr_index);
+            }
+            else {
+                resize_fill(curr_index, min_rect);
             }
         }
     }
