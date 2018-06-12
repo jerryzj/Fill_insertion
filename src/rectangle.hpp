@@ -24,6 +24,8 @@ public:
     string dump_string();
 
     int area();
+    int width();
+    int length();
 
     bool check_width(int min_width, int max_width);
 

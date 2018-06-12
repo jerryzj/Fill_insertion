@@ -771,6 +771,10 @@ double Layout::find_cost(readprocess& process, const Rectangle& _rec, int layer)
     Rectangle search_bin;
     int area_temp = 0;
     double cap_temp = 0.0;
+    // weights
+    const double w1 = 2;  // between fill & PG_net 
+    const double w2 = 5;  // between fill & fill / fill & noncritical normal
+    const double w3 = 10;  // between fill & critical normal
 
     search_bin.bl_x = _rec.bl_x / bin_size;
     search_bin.bl_y = _rec.bl_y / bin_size;
@@ -783,50 +787,205 @@ double Layout::find_cost(readprocess& process, const Rectangle& _rec, int layer)
     else{
         for(int i = search_bin.bl_x; i < search_bin.tr_x; i++){
             for(int j = search_bin.bl_y; j < search_bin.tr_y; j++){
-                // Layer : layer - 1 
-                // Compare to fill
-                for(auto k : *(grid[layer-1][i][j].fill)){
-                    Rectangle temp_rec(fill_list[k].rect);
-                    area_temp = area_overlap(_rec,temp_rec);
-                    if(area_temp != 0){
-                        cap_temp = process.find_area(layer-1,layer,area_temp);
-                        // cap_temp will multiply by a constant and accumulate to cost
-                        cost += cap_temp * 1e3;
-                    }
-                }
+                // Checking Layer = layer - 1 
                 // Compare to normal
                 for(auto k : *(grid[layer-1][i][j].normal)){
-                    Rectangle temp_rec(fill_list[k].rect);
-                    area_temp = area_overlap(_rec,temp_rec);
+                    area_temp = area_overlap(_rec,normal_list[k].rect);
                     if(area_temp != 0){
-                        cap_temp = process.find_area(layer-1,layer,area_temp);
+                        cap_temp = process.find_area(layer-1, layer, area_temp);
                         // cap_temp will multiply by a constant and accumulate to cost
-                        cost += cap_temp * 1e5;
+                        if(normal_list[k].net_id == 0){ // If PG_net
+                            cost += cap_temp * w1;
+                        }
+                        else if(Is_critical(k)){        // If critical net
+                            cost += cap_temp * w3;
+                        }
+                        else{
+                            cost += cap_temp * w2;      // Not-critical net
+                        }
                     }
                 }
-                // Layer : layer + 1 
                 // Compare to fill
-                for(auto k : *(grid[layer+1][i][j].fill)){
-                    Rectangle temp_rec(fill_list[k].rect);
-                    area_temp = area_overlap(_rec,temp_rec);
+                for(auto k : *(grid[layer-1][i][j].fill)){
+                    area_temp = area_overlap(_rec,fill_list[k].rect);
                     if(area_temp != 0){
-                        cap_temp = process.find_area(layer,layer+1,area_temp);
+                        cap_temp = process.find_area(layer-1, layer, area_temp);
                         // cap_temp will multiply by a constant and accumulate to cost
-                        cost += cap_temp * 1e3;
+                        cost += cap_temp * w2;
                     }
                 }
+                // Checking Layer = layer + 1 
                 // Compare to normal
                 for(auto k : *(grid[layer+1][i][j].normal)){
-                    Rectangle temp_rec(fill_list[k].rect);
-                    area_temp = area_overlap(_rec,temp_rec);
+                    area_temp = area_overlap(_rec,normal_list[k].rect);
                     if(area_temp != 0){
-                        cap_temp = process.find_area(layer,layer+1,area_temp);
+                        cap_temp = process.find_area(layer, layer+1, area_temp);
                         // cap_temp will multiply by a constant and accumulate to cost
-                        cost += cap_temp * 1e5;
+                        if(normal_list[k].net_id == 0){ // If PG_net
+                            cost += cap_temp * w1;
+                        }
+                        else if(Is_critical(k)){        // If critical net
+                            cost += cap_temp * w3;
+                        }
+                        else{
+                            cost += cap_temp * w2;      // Not-critical net
+                        }
+                    }
+                }
+                // Compare to fill
+                for(auto k : *(grid[layer+1][i][j].fill)){
+                    area_temp = area_overlap(_rec,fill_list[k].rect);
+                    if(area_temp != 0){
+                        cap_temp = process.find_area(layer, layer+1, area_temp);
+                        // cap_temp will multiply by a constant and accumulate to cost
+                        cost += cap_temp * w2;
                     }
                 }
             }
         }
         return cost;
+    }
+}
+
+void Layout::bin_optimization(readprocess& process, int layer, int i, int j){
+
+    typedef pair<int, double> pairIntDouble;
+    
+    double target_area = (min_density[layer] * 1.1) * bin_size * bin_size;
+    bin& temp_bin = grid[layer][i][j];
+    double temp_cost = 0.0;
+    vector<pairIntDouble> CP_list;
+    bool reduce_flag = true;       // whether a rectangle is reduced or not  (might be remove)
+    int list_index = 0;            // index for CP_list (might be remove)
+
+    // initial cost assignment
+    for(auto i : *(temp_bin.fill)){
+        // find cost of a poly
+        temp_cost = find_cost(process, fill_list[i].rect, layer);
+        // cost write back to net
+        fill_list[i].cost = temp_cost;
+        // calculate C/P value
+        temp_cost = temp_cost / (double)fill_list[i].rect.area();
+        // insert net_id, cost information to map
+        CP_list.push_back(make_pair(i, temp_cost));
+    }
+    // sort by fill cost in descending order
+    sort(CP_list.begin(), CP_list.end(),
+                    [](const pair<int, double> &left, const pair<int, double> &right){
+                        return left.second > right.second;}
+    );
+    // maybe we need another termination condition
+    while((temp_bin.normal_area + temp_bin.fill_area) > target_area && list_index < CP_list.size()){
+        int fill_index = 0;
+        double curr_cost = 0.0;
+        double ratio_x = 0.0;
+        double ratio_y = 0.0;
+        bool DRC_stat = false;
+        vector<pairIntDouble> cut_CP_list(4);
+
+        if(reduce_flag == true){
+            // pick vector head, reset index and sort CP_list
+            list_index = 0;
+            sort(CP_list.begin(), CP_list.end(),
+                    [](const pair<int, double> &left, const pair<int, double> &right){
+                        return left.second > right.second;}
+            );
+        }
+        else{
+            ++list_index;
+        }
+        // pick by vector index
+        fill_index = CP_list[list_index].first;
+        curr_cost  = CP_list[list_index].second;             
+        Rectangle temp_rect(fill_list[fill_index].rect);
+        // determine width cut ratio
+        if(temp_rect.width() > (2 * min_width[layer])) ratio_x = 0.5;
+        else ratio_x = 0.7;
+        // determine length cut ratio
+        if(temp_rect.length() > (2 * min_width[layer])) ratio_y = 0.5;
+        else ratio_y = 0.7;
+        // try different ways to cut rectangle, left, down, right, up 
+        Rectangle cut_left  = rect_resize(temp_rect, ratio_x, 0, 0, 0);
+        Rectangle cut_down  = rect_resize(temp_rect, 0, ratio_y, 0, 0);
+        Rectangle cut_right = rect_resize(temp_rect, 0, 0, ratio_x, 0);
+        Rectangle cut_up    = rect_resize(temp_rect, 0, 0, 0, ratio_y);
+        // After cutting rectangle in different ways
+        // check DRC, if cut ratio = 0.5, width check must pass
+        if(ratio_x == 0.7){
+            // do DRC
+            DRC_stat = cut_left.check_width(min_width[layer],max_fill_width[layer]);
+            if(DRC_stat == true){
+                // find cost and calculate C/P
+                double cost_left  = find_cost(process, cut_left,  layer);
+                cost_left = cost_left / (double) cut_left.area();
+                cut_CP_list.push_back(make_pair(1,cost_left));
+            }
+            DRC_stat = cut_right.check_width(min_width[layer],max_fill_width[layer]);
+            if(DRC_stat == true){
+                double cost_right  = find_cost(process, cut_right,  layer);
+                cost_right = cost_right / (double) cut_right.area();
+                cut_CP_list.push_back(make_pair(3,cost_right));
+            }
+        }
+        else{
+            double cost_left   = find_cost(process, cut_left,  layer);
+            cost_left = cost_left / (double) cut_left.area();
+            cut_CP_list.push_back(make_pair(1,cost_left));
+
+            double cost_right  = find_cost(process, cut_right,  layer);
+            cost_right = cost_right / (double) cut_right.area();
+            cut_CP_list.push_back(make_pair(3,cost_right));
+        }
+        if(ratio_y == 0.7){
+            // do DRC
+            DRC_stat = cut_down.check_width(min_width[layer],max_fill_width[layer]);
+            if(DRC_stat == true){            
+                double cost_down  = find_cost(process, cut_down,  layer);
+                cost_down = cost_down / (double) cut_down.area();
+                cut_CP_list.push_back(make_pair(2,cost_down));       
+            }
+            DRC_stat = cut_up.check_width(min_width[layer],max_fill_width[layer]);
+            if(DRC_stat == true){            
+                double cost_up    = find_cost(process, cut_up,    layer);
+                cost_up = cost_up / (double) cut_up.area();
+                cut_CP_list.push_back(make_pair(4,cost_up));
+            }
+        }
+        else{
+            double cost_down  = find_cost(process, cut_down,  layer);
+            cost_down = cost_down / (double) cut_down.area();
+            cut_CP_list.push_back(make_pair(2,cost_down));
+
+            double cost_up    = find_cost(process, cut_up,    layer);
+            cost_up = cost_up / (double) cut_up.area();
+            cut_CP_list.push_back(make_pair(4,cost_up));   
+        }
+        // If all the cut rectangles failed, continue
+        if(cut_CP_list.empty() == true){
+            reduce_flag = false;
+            continue;
+        }
+        else{
+            // sort by fill cost in ascending order
+            sort(cut_CP_list.begin(), cut_CP_list.end(),
+                    [](const pair<int, double> &left, const pair<int, double> &right){
+                        return left.second < right.second;}
+            ); 
+            // If C/P > current C/P, continue
+            // Else replace with the new rectangle
+            if(cut_CP_list[0].second > curr_cost){
+                reduce_flag = false;
+                continue;
+            }
+            else{
+                reduce_flag = true;
+                switch(cut_CP_list[0].first){
+                    case 1: resize_fill(fill_index, cut_left ); break;
+                    case 2: resize_fill(fill_index, cut_down ); break;
+                    case 3: resize_fill(fill_index, cut_right); break;
+                    case 4: resize_fill(fill_index, cut_up   ); break;
+                }
+            }
+        }
     }
 }
