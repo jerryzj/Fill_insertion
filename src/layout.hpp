@@ -51,6 +51,7 @@ public:
 
         min_space.reserve(10);
     }
+
     //*************************
     //     I/O, print info
     //*************************
@@ -66,6 +67,12 @@ public:
     void dump_statistic();
     // select a bin and dump it into two files(normal.cut, fill.cut)
     void dump_bin(int layer, int offset_x, int offset_y);
+    // layer cost 
+    double layer_cost(int layer);
+ 
+    void find_cost_all(readprocess& process);
+    
+    void dump_result();
 
     //*************************
     //     Bin structure
@@ -125,7 +132,7 @@ public:
     double find_cost(readprocess& process, const Rectangle& _rec, int layer);
     // Simulated Annealing algorithm
     void bin_optimization(readprocess& process, int layer, int i, int j);
-
+    void layer_optimization(readprocess& process, int layer);
     //*************************
     //      Rule checking  
     //*************************

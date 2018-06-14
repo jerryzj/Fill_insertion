@@ -12,15 +12,18 @@ void Layout::fill_insertion(){
         //cout << "layer " << layer << endl;
         for (int i = 0; i < range_x; i++) {
             for (int j = 0; j < range_y; j++) {
-                // if layer = 1,3,5,7,9 insert fill by x (vertical)
-                if (layer % 2 == 1){
-                    fill_regions = find_fill_region_x(layer, i, j);
-                }
-                // else, layer = 2,4,6,8 insert fill by y (horizontal)
-                else{
-                    fill_regions = find_fill_region_y(layer, i, j);
-                }
-                metal_fill(layer, fill_regions);
+                // 6/14 only do fill insertion on low density bins
+                if (grid[layer][i][j].normal_area < 0.4*bin_size*bin_size) {
+                    // if layer = 1,3,5,7,9 insert fill by x (vertical)
+                    if (layer % 2 == 1){
+                        fill_regions = find_fill_region_x(layer, i, j);
+                    }
+                    // else, layer = 2,4,6,8 insert fill by y (horizontal)
+                    else{
+                        fill_regions = find_fill_region_y(layer, i, j);
+                    }
+                    metal_fill(layer, fill_regions);
+                } 
             }
         }
     }
@@ -31,15 +34,11 @@ void Layout::fill_insertion(){
     int layer = 9;
     for (int i = 0; i < range_x - 1; i++){
         for (int j = 0; j < range_y - 1; j++){
-            fill_regions = find_fill_region_x(layer, i, j, 2);
-            metal_fill(layer, fill_regions);
-
-            double density = ((double)grid[layer][i][j].normal_area +
-                              (double)grid[layer][i][j].fill_area) /
-                             (bin_size * bin_size);
-
-            if (density <= min_density[layer])
-                cout << layer << " " << i << " " << j << ": " << density << endl;
+            
+            if (one_window_density_check(layer, i, j, 2) == false) {
+                fill_regions = find_fill_region_x(layer, i, j, 2);
+                metal_fill(layer, fill_regions);
+            }
         }
     }
 
@@ -692,7 +691,7 @@ double Layout::find_cost(readprocess& process, const Rectangle& _rec, int layer)
     // weights
     const double w1 = 2;  // between fill & PG_net 
     const double w2 = 5;  // between fill & fill / fill & noncritical normal
-    const double w3 = 10;  // between fill & critical normal
+    const double w3 = 10; // between fill & critical normal
 
     search_bin.bl_x = _rec.bl_x / bin_size;
     search_bin.bl_y = _rec.bl_y / bin_size;
@@ -703,8 +702,8 @@ double Layout::find_cost(readprocess& process, const Rectangle& _rec, int layer)
         return 0;
     }
     else{
-        for(int i = search_bin.bl_x; i < search_bin.tr_x; i++){
-            for(int j = search_bin.bl_y; j < search_bin.tr_y; j++){
+        for(int i = search_bin.bl_x; i <= search_bin.tr_x; i++){
+            for(int j = search_bin.bl_y; j <= search_bin.tr_y; j++){
                 // Checking Layer = layer - 1 
                 // Compare to normal
                 for(auto k : *(grid[layer-1][i][j].normal)){
@@ -765,32 +764,45 @@ double Layout::find_cost(readprocess& process, const Rectangle& _rec, int layer)
     }
 }
 
+void Layout::layer_optimization(readprocess& process, int layer){
+    int range_x = normal_list[0].rect.tr_x / bin_size;
+    int range_y = normal_list[0].rect.tr_y / bin_size;
+
+    for (int i = 0; i < range_x; i++)
+        for (int j = 0; j < range_y; j++)
+            bin_optimization(process, layer, i, j);
+}
+
 void Layout::bin_optimization(readprocess& process, int layer, int i, int j){
-    double target_area = (min_density[layer] * 1.1) * bin_size * bin_size;
+    double target_area = (min_density[layer] * 1) * bin_size * bin_size;
+
     bin& temp_bin = grid[layer][i][j];
+
     vector<pair<int, double>> CP_list;
-    double ratio = 0.5;
+
+    double ratio = -0.5;
 
     // initial cost assignment
     for(auto i : *(temp_bin.fill)){
         // find cost of a poly
-        double temp_cost = find_cost(process, fill_list[i].rect, layer);
-        // cost write back to net
-        fill_list[i].cost = temp_cost;
+        if (fill_list[i].cost == 0) {
+            // cost write back to net
+            fill_list[i].cost = find_cost(process, fill_list[i].rect, layer);
+        }
+        double temp_cp;
         // calculate C/P value
-        temp_cost = temp_cost / (double)fill_list[i].rect.area();
+        temp_cp = fill_list[i].cost / (double)fill_list[i].rect.area();
         // insert net_id, cost information to map
-        CP_list.push_back(make_pair(i, temp_cost));
+        CP_list.push_back(make_pair(i, temp_cp));
     }
+
     // sort by fill cost in descending order
-    sort(CP_list.begin(), CP_list.end(),
+    sort( CP_list.begin(), CP_list.end(),
                     [](const pair<int, double> &left, const pair<int, double> &right){
-                        return left.second < right.second;}
-    );
+                        return left.second < right.second;} );
 
     // maybe we need another termination condition
     while((temp_bin.normal_area + temp_bin.fill_area) > target_area && CP_list.empty() == false){
-
         int curr_index;
         double curr_cost;
  
@@ -800,18 +812,26 @@ void Layout::bin_optimization(readprocess& process, int layer, int i, int j){
         CP_list.pop_back();
 
         Rectangle temp_rect(fill_list[curr_index].rect);
+
+        // terminate condition 
+        // if reduction cause density violation
+        if (target_area > temp_bin.normal_area + temp_bin.fill_area - temp_rect.area()) {
+            break;
+        }
+
+
         // determine width cut ratio
         vector<Rectangle> candidate;
 
         // due to quantization error for "double", 
         // the condition must be more conservative
         // 1. horizantal resize 
-        if ((1.0-ratio)*temp_rect.width()*0.95 >= min_width[layer]) {
+        if ((1.0+ratio)*temp_rect.width()*0.95 >= min_width[layer]) {
             candidate.push_back(rect_resize(temp_rect, ratio, 0, 0, 0));
             candidate.push_back(rect_resize(temp_rect, 0, 0, ratio, 0));
         }
         // 2. vertical resize 
-        if ((1.0-ratio)*temp_rect.length()*0.95 >= min_width[layer]) {
+        if ((1.0+ratio)*temp_rect.length()*0.95 >= min_width[layer]) {
             candidate.push_back(rect_resize(temp_rect, 0, ratio, 0, 0));
             candidate.push_back(rect_resize(temp_rect, 0, 0, 0, ratio));
         }
@@ -835,7 +855,6 @@ void Layout::bin_optimization(readprocess& process, int layer, int i, int j){
                     min_rect = c;
                 }
             }
-
             if (min_cp > curr_cost) {
                 delete_fill(curr_index);
             }
