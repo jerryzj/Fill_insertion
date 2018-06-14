@@ -59,13 +59,38 @@ int main(int argc ,char *argv[]){
     layout.bin_mapping();
     layout.fill_insertion();
     // Checking
+    cout << "**************Find cost before Opt***************" << endl;
+    layout.find_cost_all(process); 
     layout.window_based_density_check();
     layout.DRC_check_width();
     layout.DRC_check_space();
     layout.dump_statistic();
+    
+    cout << "**************Find cost after Opt***************" << endl;
+    for (int layer = 1; layer <= 8; layer++)
+        layout.layer_optimization(process, layer);
+    layout.dump_statistic();
+
+    
+    for (int epoch = 0; epoch < 20; epoch++) {
+        cout << "****epoch = " << epoch << endl;
+        layout.fill_insertion();
+        for (int layer = 1; layer <= 8; layer++)
+            layout.layer_optimization(process, layer);
+        layout.dump_statistic();
+        layout.fill_sort();
+        layout.fill_remapping();
+    }
+    
 
 
-    layout.dump_bin(9, 69, 33);
+    cout << "**************Final Check***************" << endl;
+    layout.window_based_density_check();
+    layout.DRC_check_width();
+    layout.DRC_check_space();
+    //layout.bin_optimization(process, 1, 50, 50);
 
+    //layout.dump_bin(7, 50, 50);
+    layout.dump_result();
     return 0;
 }
