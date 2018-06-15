@@ -66,6 +66,9 @@ class readprocess{
     // window size (for DRC)
     int window_size;
 
+    //friend double find_cost(readprocess& process, const Rectangle& _rec, int layer);
+    friend class Layout;
+
     private:
     enum table_type{
         area, lateral, fringe

@@ -5,11 +5,13 @@
 #include <vector>
 #include <string.h>
 #include <algorithm>
+#include <utility>
+#include <map>
 #include "rectangle.hpp"
 #include "parser.hpp"   // in order to read rule file
 
-
 using namespace std;
+
 
 class Layout{
 public:    
@@ -21,7 +23,7 @@ public:
         net(){
             net_id = 0;
             layer = 0;
-            cost = 0;
+            cost = 0.0;
         }
     };
     struct bin{
@@ -49,6 +51,7 @@ public:
 
         min_space.reserve(10);
     }
+
     //*************************
     //     I/O, print info
     //*************************
@@ -64,6 +67,12 @@ public:
     void dump_statistic();
     // select a bin and dump it into two files(normal.cut, fill.cut)
     void dump_bin(int layer, int offset_x, int offset_y);
+    // layer cost 
+    double layer_cost(int layer);
+ 
+    void find_cost_all(readprocess& process);
+    
+    void dump_result();
 
     //*************************
     //     Bin structure
@@ -120,8 +129,10 @@ public:
     // Expand fill area, only called by random
     void random_expand(net& _net, int layer, int i, int j, int s, int step, string mode);
     // find cost of an added fill metal
-    double find_cost(const readprocess& process, const Rectangle& _rec);
-
+    double find_cost(readprocess& process, const Rectangle& _rec, int layer);
+    // Simulated Annealing algorithm
+    void bin_optimization(readprocess& process, int layer, int i, int j);
+    void layer_optimization(readprocess& process, int layer);
     //*************************
     //      Rule checking  
     //*************************

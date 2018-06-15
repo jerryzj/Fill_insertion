@@ -11,10 +11,27 @@ int Rectangle::area(){
     int area = (tr_x - bl_x) * (tr_y - bl_y);
 
     if (area <= 0){
-        cerr << "The rectangle has area <=0 " << endl;
+        cerr << "The rectangle has area <= 0 " << endl;
     }
     return area;
 }
+
+int Rectangle::width(){
+    int width = tr_x - bl_x;
+    if(width <= 0){
+        cerr << "The rectangle has width <= 0"<<endl;
+    }
+    return width;
+}
+
+int Rectangle::length(){
+    int length = tr_y - bl_y;
+    if(length <= 0){
+        cerr<< "The rectangle has length <= 0"<<endl;
+    }
+    return length;
+}
+
 
 int area_overlap(const Rectangle &_r1, const Rectangle &_r2){
     int area = 0;
@@ -43,8 +60,7 @@ bool check_space(const Rectangle &_r1, const Rectangle &_r2, int margin){
     }
 }
 
-void Rectangle::dump()
-{
+void Rectangle::dump(){
     cout << "rect " 
          << bl_x << " "
          << bl_y << " " 
@@ -52,8 +68,7 @@ void Rectangle::dump()
          << tr_y << endl;
 }
 
-string Rectangle::dump_string()
-{
+string Rectangle::dump_string(){
     string rect_str;
 
 
@@ -65,9 +80,7 @@ string Rectangle::dump_string()
     return rect_str;
 }
 
-Rectangle rect_overlap(const Rectangle &_r1, const Rectangle &_r2)
-{
-
+Rectangle rect_overlap(const Rectangle &_r1, const Rectangle &_r2){
     Rectangle r_out;
     
     r_out.bl_x = max(_r1.bl_x, _r2.bl_x);
@@ -78,9 +91,7 @@ Rectangle rect_overlap(const Rectangle &_r1, const Rectangle &_r2)
     return r_out;
 }
 
-bool Rectangle::check_width(int min_width, int max_width)
-{
-
+bool Rectangle::check_width(int min_width, int max_width){
     int width_x = tr_x - bl_x;
     int length_y = tr_y - bl_y;
 
@@ -95,8 +106,7 @@ bool Rectangle::check_width(int min_width, int max_width)
 // resize and return a resized rectangle 
 // enlarge if parameter is positive
 // reduce if parameter is negative
-Rectangle rect_resize(const Rectangle &_in, double lf, double dw, double rt, double up)
-{
+Rectangle rect_resize(const Rectangle &_in, double lf, double dw, double rt, double up){
     Rectangle _out;
 
     int width_x = _in.tr_x - _in.bl_x;

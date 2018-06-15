@@ -1,7 +1,6 @@
 #include "layout.hpp"
 #include "statistic.hpp"
 
-
 // fill insertion algorition, use find fill region and metal fill
 void Layout::fill_insertion(){
     int range_x = normal_list[0].rect.tr_x / bin_size;
@@ -9,24 +8,22 @@ void Layout::fill_insertion(){
     vector<Rectangle> fill_regions;
 
     // for each bin
-    for (int layer = 1; layer <= 9; layer++) // 5/29 modified
-    {
+    for (int layer = 1; layer <= 9; layer++) {
         //cout << "layer " << layer << endl;
-        for (int i = 0; i < range_x; i++)
-        {
-            for (int j = 0; j < range_y; j++)
-            {
-                // if layer = 1,3,5,7,9 insert fill by x (vertical)
-                if (layer % 2 == 1)
-                {
-                    fill_regions = find_fill_region_x(layer, i, j);
-                }
-                // else, layer = 2,4,6,8 insert fill by y (horizontal)
-                else
-                {
-                    fill_regions = find_fill_region_y(layer, i, j);
-                }
-                metal_fill(layer, fill_regions);
+        for (int i = 0; i < range_x; i++) {
+            for (int j = 0; j < range_y; j++) {
+                // 6/14 only do fill insertion on low density bins
+                if (grid[layer][i][j].normal_area < 0.4*bin_size*bin_size) {
+                    // if layer = 1,3,5,7,9 insert fill by x (vertical)
+                    if (layer % 2 == 1){
+                        fill_regions = find_fill_region_x(layer, i, j);
+                    }
+                    // else, layer = 2,4,6,8 insert fill by y (horizontal)
+                    else{
+                        fill_regions = find_fill_region_y(layer, i, j);
+                    }
+                    metal_fill(layer, fill_regions);
+                } 
             }
         }
     }
@@ -35,24 +32,18 @@ void Layout::fill_insertion(){
     
     cout << "Window Based Fill Start" << endl;
     int layer = 9;
-    for (int i = 0; i < range_x - 1; i++)
-    {
-        for (int j = 0; j < range_y - 1; j++)
-        {
-            fill_regions = find_fill_region_x(layer, i, j, 2);
-            metal_fill(layer, fill_regions);
-
-            double density = ((double)grid[layer][i][j].normal_area +
-                              (double)grid[layer][i][j].fill_area) /
-                             (bin_size * bin_size);
-
-            if (density <= min_density[layer])
-                cout << layer << " " << i << " " << j << ": " << density << endl;
+    for (int i = 0; i < range_x - 1; i++){
+        for (int j = 0; j < range_y - 1; j++){
+            
+            if (one_window_density_check(layer, i, j, 2) == false) {
+                fill_regions = find_fill_region_x(layer, i, j, 2);
+                metal_fill(layer, fill_regions);
+            }
         }
     }
 
     // 6/6 test random based fill on layer 9
-
+    /*
     cout << "Random Fill Start" << endl;
     layer = 9;
     for (int i = 0; i < range_x; i++)
@@ -69,11 +60,10 @@ void Layout::fill_insertion(){
                 cout << layer << " " << i << " " << j << ": " << density << endl;
         }
     }
-
+    */
 }
 
-void Layout::metal_fill(int layer, const vector<Rectangle> &fill_regions)
-{
+void Layout::metal_fill(int layer, const vector<Rectangle> &fill_regions){
 
     Rectangle temp;
     net net_temp;
@@ -82,18 +72,13 @@ void Layout::metal_fill(int layer, const vector<Rectangle> &fill_regions)
     int fill_width_ratio, fill_length_ratio;
 
     vector<int> fill_bl_x;
-    fill_bl_x.reserve(20);
     vector<int> fill_bl_y;
-    fill_bl_y.reserve(20);
     vector<int> fill_tr_x;
-    fill_tr_x.reserve(20);
     vector<int> fill_tr_y;
-    fill_tr_y.reserve(20);
 
     int width_left, length_left;
 
-    for (auto r : fill_regions)
-    {
+    for (auto r : fill_regions){
         fill_bl_x.clear();
         fill_bl_y.clear();
         fill_tr_x.clear();
@@ -109,62 +94,51 @@ void Layout::metal_fill(int layer, const vector<Rectangle> &fill_regions)
         fill_width_ratio = fill_width / max_fill_width[layer];
         fill_length_ratio = fill_length / max_fill_width[layer];
 
-        if (fill_width >= min_width[layer] && fill_length >= min_width[layer])
-        {
+        if (fill_width >= min_width[layer] && fill_length >= min_width[layer]){
             // if width ratio > 0, means width > max_width, cut width into 1300-130 = 1170
-            if (fill_width_ratio > 0)
-            {
-                for (int a = 0; a < fill_width_ratio; a++)
-                {
+            if (fill_width_ratio > 0){
+                for (int a = 0; a < fill_width_ratio; a++){
                     fill_bl_x.push_back(temp.bl_x + (a * max_fill_width[layer]));
                     fill_tr_x.push_back(temp.bl_x + (a * max_fill_width[layer]) +
                                         max_fill_width[layer] - min_space[layer]);
                 }
 
                 width_left = temp.tr_x - (temp.bl_x + (fill_width_ratio * max_fill_width[layer]));
-                if (width_left > min_width[layer])
-                {
+                if (width_left > min_width[layer]){
                     fill_bl_x.push_back(temp.bl_x + (fill_width_ratio * max_fill_width[layer]));
                     fill_tr_x.push_back(temp.tr_x);
                     fill_width_ratio++; // use as loop index later
                 }
             }
-            else
-            {
+            else{
                 fill_bl_x.push_back(temp.bl_x);
                 fill_tr_x.push_back(temp.tr_x);
                 fill_width_ratio = 1; // for loop used
             }
 
             // if length ratio > 0, means length > max_width, cut length into 1300-130 = 1170
-            if (fill_length_ratio > 0)
-            {
-                for (int a = 0; a < fill_length_ratio; a++)
-                {
+            if (fill_length_ratio > 0){
+                for (int a = 0; a < fill_length_ratio; a++){
                     fill_bl_y.push_back(temp.bl_y + (a * max_fill_width[layer]));
                     fill_tr_y.push_back(temp.bl_y + (a * max_fill_width[layer]) +
                                         max_fill_width[layer] - min_space[layer]);
                 }
                 length_left = temp.tr_y - (temp.bl_y + (fill_length_ratio * max_fill_width[layer]));
-                if (length_left > min_width[layer])
-                {
+                if (length_left > min_width[layer]){
                     fill_bl_y.push_back(temp.bl_y + (fill_length_ratio * max_fill_width[layer]));
                     fill_tr_y.push_back(temp.tr_y);
                     fill_length_ratio++; // use as loop index later
                 }
             }
-            else
-            {
+            else{
                 fill_bl_y.push_back(temp.bl_y);
                 fill_tr_y.push_back(temp.tr_y);
                 fill_length_ratio = 1; // for loop used
             }
 
             //push fill to fill_list and update density
-            for (int a = 0; a < fill_width_ratio; a++)
-            {
-                for (int b = 0; b < fill_length_ratio; b++)
-                {
+            for (int a = 0; a < fill_width_ratio; a++){
+                for (int b = 0; b < fill_length_ratio; b++){
                     net_temp.layer = layer;
                     net_temp.net_id = 0;
                     net_temp.rect.set_rectangle(fill_bl_x[a], fill_bl_y[b],
@@ -183,8 +157,7 @@ void Layout::metal_fill(int layer, const vector<Rectangle> &fill_regions)
 
 // 6/4 if s = 1, bin based find fill is performed
 // if s = 2, window based find fill is performed
-vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j, int s)
-{
+vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j, int s){
     Rectangle temp;
     net net_temp;
     Rectangle bin_rect;
@@ -211,40 +184,34 @@ vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j, int s)
     bin_rect.set_rectangle(i * bin_size, j * bin_size, (i + s) * bin_size, (j + s) * bin_size);
 
     // 6/4 change poly_bin_instersect for window based
-    for (int i1 = 0; i1 < s; i1++)
-        for (int j1 = 0; j1 < s; j1++)
-        {
-            for (auto poly : *(grid[layer][i + i1][j + j1].normal))
-            {
+    for (int i1 = 0; i1 < s; i1++){
+        for (int j1 = 0; j1 < s; j1++){
+            for (auto poly : *(grid[layer][i + i1][j + j1].normal)){
                 temp = rect_overlap(normal_list[poly].rect, bin_rect);
                 poly_bin_instersect.push_back(temp);
             }
-            for (auto poly : *(grid[layer][i + i1][j + j1].fill))
-            {
+            for (auto poly : *(grid[layer][i + i1][j + j1].fill)){
                 temp = rect_overlap(fill_list[poly].rect, bin_rect);
                 poly_bin_instersect.push_back(temp);
             }
         }
-
+    }
     // store x point in intersect_x
-    for (auto x : poly_bin_instersect)
-    {
+    for (auto x : poly_bin_instersect){
         intersect_x.push_back(x.bl_x);
         intersect_x.push_back(x.tr_x);
     }
 
     // add bin boundary as intersection point
     // when no normal in bin
-    if (intersect_x.size() == 0)
-    {
+    if (intersect_x.size() == 0){
         intersect_x.push_back(bin_rect.bl_x);
         intersect_x.push_back(bin_rect.tr_x);
     }
 
     // add bin boundary as intersection
     // when normal did not overlap with bin boundary
-    else
-    {
+    else{
         if (intersect_x[0] > bin_rect.bl_x)
             intersect_x.insert(intersect_x.begin(), bin_rect.bl_x);
         if (intersect_x.back() < bin_rect.tr_x)
@@ -259,16 +226,13 @@ vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j, int s)
     net_temp.net_id = 0;
     net_temp.layer = layer;
 
-    for (int in_x = 0; in_x < intersect_x.size() - 1; in_x++)
-    {
+    for (int in_x = 0; in_x < intersect_x.size() - 1; in_x++){
         // Given x , find intersection point y
-        for (auto v : poly_bin_instersect)
-        {
+        for (auto v : poly_bin_instersect){
             // find poly intersect with line x = intersect[in_x] and x = intersect[in_x+1]
             // add y to intersecty when line x = intersect_x cross normal
             if ((intersect_x[in_x] >= v.bl_x && intersect_x[in_x] <= v.tr_x) ||
-                (intersect_x[in_x + 1] >= v.bl_x && intersect_x[in_x + 1] <= v.tr_x))
-            {
+                (intersect_x[in_x + 1] >= v.bl_x && intersect_x[in_x + 1] <= v.tr_x)){
                 // store intersection y point
                 intersect_y.push_back(v.tr_y);
                 intersect_y.push_back(v.bl_y);
@@ -276,15 +240,13 @@ vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j, int s)
         }
 
         // if no poly in this region, set bin as intersection point
-        if (intersect_y.size() == 0)
-        {
+        if (intersect_y.size() == 0){
             intersect_y.push_back(bin_rect.tr_y);
             intersect_y.push_back(bin_rect.bl_y);
         }
         // add bin boundary as intersection
         // when normal did not overlap with bin boundary
-        else
-        {
+        else{
             if (intersect_y[0] > bin_rect.bl_y)
                 intersect_y.insert(intersect_y.begin(), bin_rect.bl_y);
             if (intersect_y.back() < bin_rect.tr_y)
@@ -294,40 +256,33 @@ vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j, int s)
         stable_sort(intersect_y.begin(), intersect_y.end());
         intersect_y.erase(unique(intersect_y.begin(), intersect_y.end()), intersect_y.end());
 
-        for (int in_y = 0; in_y < intersect_y.size() - 1; in_y++)
-        {
+        for (int in_y = 0; in_y < intersect_y.size() - 1; in_y++){
             not_poly = 1;
             // for intersection points, filter out normal poly
-            for (auto v : poly_bin_instersect)
-            {
+            for (auto v : poly_bin_instersect){
                 if ((intersect_x[in_x] >= v.bl_x && intersect_x[in_x] <= v.tr_x) &&
-                    (intersect_x[in_x + 1] >= v.bl_x && intersect_x[in_x + 1] <= v.tr_x))
-                {
+                    (intersect_x[in_x + 1] >= v.bl_x && intersect_x[in_x + 1] <= v.tr_x)){
                     // intersection point = normal bl and tr
-                    if ((intersect_y[in_y] == v.bl_y) && (intersect_y[in_y + 1] == v.tr_y))
-                    {
+                    if ((intersect_y[in_y] == v.bl_y) && (intersect_y[in_y + 1] == v.tr_y)){
                         not_poly = 0;
                         //cout << "intersection point = normal bl and tr " << endl;
                     }
 
                     // intersection in normal poly, filter out overlap normal poly
-                    if ((intersect_y[in_y] > v.bl_y) && (intersect_y[in_y] < v.tr_y))
-                    {
+                    if ((intersect_y[in_y] > v.bl_y) && (intersect_y[in_y] < v.tr_y)){
                         not_poly = 0;
                         //cout << " y intersection in normal poly, filter out overlap normal poly" << endl;
                     }
 
                     // intersection in normal poly, filter out overlap normal poly
-                    if ((intersect_y[in_y + 1] > v.bl_y) && (intersect_y[in_y + 1] < v.tr_y))
-                    {
+                    if ((intersect_y[in_y + 1] > v.bl_y) && (intersect_y[in_y + 1] < v.tr_y)){
                         not_poly = 0;
                         //cout << "y + 1 intersection in normal poly, filter out overlap normal poly" << endl;
                     }
                 }
             }
 
-            if (not_poly)
-            {
+            if (not_poly){
                 temp.bl_x = intersect_x[in_x];
                 temp.bl_y = intersect_y[in_y];
                 temp.tr_x = intersect_x[in_x + 1];
@@ -346,8 +301,7 @@ vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j, int s)
 
     vector<bool> not_merge;
     // for each retangle in no_merge_list, not_merge = 1
-    for (int c = 0; c < no_merge_list.size(); c++)
-    {
+    for (int c = 0; c < no_merge_list.size(); c++){
         not_merge.push_back(1);
     }
 
@@ -359,14 +313,12 @@ vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j, int s)
     net_temp.net_id = 0;
     net_temp.layer = layer;
 
-    for (int c = 0; c < no_merge_list.size(); c++)
-    {
+    for (int c = 0; c < no_merge_list.size(); c++){
         // if this rectangle did not merge yet
         before_merge_x_list.clear();
         after_merge_x_list.clear();
 
-        if (not_merge[c])
-        {
+        if (not_merge[c]){
             // set not_merge[c] = 0
             not_merge[c] = 0;
 
@@ -374,12 +326,10 @@ vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j, int s)
             before_merge_x_list.push_back(no_merge_list[c].tr_x);
 
             // find rectangle with the same bl_y and t_y
-            for (int d = c + 1; d < no_merge_list.size(); d++)
-            {
+            for (int d = c + 1; d < no_merge_list.size(); d++){
                 // if no_merge_list[d] and no_merge_list[c] have same bl_y and tr_y
                 if ((no_merge_list[d].bl_y == no_merge_list[c].bl_y) &&
-                    (no_merge_list[d].tr_y == no_merge_list[c].tr_y))
-                {
+                    (no_merge_list[d].tr_y == no_merge_list[c].tr_y)){
                     // set not_merge[d] = 0
                     not_merge[d] = 0;
 
@@ -393,18 +343,15 @@ vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j, int s)
             // merge x point
             stable_sort(before_merge_x_list.begin(), before_merge_x_list.end());
 
-            for (int d = 0; d < before_merge_x_list.size() - 1;)
-            {
+            for (int d = 0; d < before_merge_x_list.size() - 1;){
                 //cout << "hihi 1" << endl;
                 // if not duplicate, push into after_merge_x_list
-                if (before_merge_x_list[d] != before_merge_x_list[d + 1])
-                {
+                if (before_merge_x_list[d] != before_merge_x_list[d + 1]){
                     after_merge_x_list.push_back(before_merge_x_list[d]);
                     d++;
                 }
                 // if before_merge_x_list[d] == before_merge_x_list[d+1], skip this two points
-                else
-                {
+                else{
                     d += 2;
                 }
             }
@@ -412,8 +359,7 @@ vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j, int s)
             after_merge_x_list.push_back(before_merge_x_list.back());
 
             // push merge rectangle into init_fill_list
-            for (int d = 0; d < after_merge_x_list.size() - 1; d += 2)
-            {
+            for (int d = 0; d < after_merge_x_list.size() - 1; d += 2){
                 net_temp.rect.bl_x = after_merge_x_list[d];
                 net_temp.rect.tr_x = after_merge_x_list[d + 1];
                 net_temp.rect.bl_y = no_merge_list[c].bl_y;
@@ -437,8 +383,7 @@ vector<Rectangle> Layout::find_fill_region_x(int layer, int i, int j, int s)
 
 // 6/4 if s = 1, bin based find fill is performed
 // if s = 2, window based find fill is performed
-vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j, int s)
-{
+vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j, int s){
     Rectangle temp;
     net net_temp;
     Rectangle bin_rect;
@@ -465,40 +410,34 @@ vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j, int s)
     bin_rect.set_rectangle(i * bin_size, j * bin_size, (i + s) * bin_size, (j + s) * bin_size);
 
     // 6/4 change poly_bin_instersect for window based
-    for (int i1 = 0; i1 < s; i1++)
-        for (int j1 = 0; j1 < s; j1++)
-        {
-            for (auto poly : *(grid[layer][i + i1][j + j1].normal))
-            {
+    for (int i1 = 0; i1 < s; i1++){
+        for (int j1 = 0; j1 < s; j1++){
+            for (auto poly : *(grid[layer][i + i1][j + j1].normal)){
                 temp = rect_overlap(normal_list[poly].rect, bin_rect);
                 poly_bin_instersect.push_back(temp);
             }
-            for (auto poly : *(grid[layer][i + i1][j + j1].fill))
-            {
+            for (auto poly : *(grid[layer][i + i1][j + j1].fill)){
                 temp = rect_overlap(fill_list[poly].rect, bin_rect);
                 poly_bin_instersect.push_back(temp);
             }
         }
-
+    }
     // store y point in intersect_y
-    for (auto y : poly_bin_instersect)
-    {
+    for (auto y : poly_bin_instersect){
         intersect_y.push_back(y.bl_y);
         intersect_y.push_back(y.tr_y);
     }
 
     // add bin boundary as intersection point
     // when no normal in bin
-    if (intersect_y.size() == 0)
-    {
+    if (intersect_y.size() == 0){
         intersect_y.push_back(bin_rect.bl_y);
         intersect_y.push_back(bin_rect.tr_y);
     }
 
     // add bin boundary as intersection
     // when normal did not overlap with bin boundary
-    else
-    {
+    else{
         if (intersect_y[0] > bin_rect.bl_y)
             intersect_y.insert(intersect_y.begin(), bin_rect.bl_y);
         if (intersect_y.back() < bin_rect.tr_y)
@@ -513,16 +452,13 @@ vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j, int s)
     net_temp.net_id = 0;
     net_temp.layer = layer;
 
-    for (int in_y = 0; in_y < intersect_y.size() - 1; in_y++)
-    {
+    for (int in_y = 0; in_y < intersect_y.size() - 1; in_y++){
         // Given y , find intersection point x
-        for (auto v : poly_bin_instersect)
-        {
+        for (auto v : poly_bin_instersect){
             // find poly intersect with line y = intersect[in_y] and y = intersect[in_y+1]
             // add x to intersecty when line y = intersect_y cross normal
             if ((intersect_y[in_y] >= v.bl_y && intersect_y[in_y] <= v.tr_y) ||
-                (intersect_y[in_y + 1] >= v.bl_y && intersect_y[in_y + 1] <= v.tr_y))
-            {
+                (intersect_y[in_y + 1] >= v.bl_y && intersect_y[in_y + 1] <= v.tr_y)){
                 // store intersection y point
                 intersect_x.push_back(v.tr_x);
                 intersect_x.push_back(v.bl_x);
@@ -530,15 +466,13 @@ vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j, int s)
         }
 
         // if no poly in this region, set bin as intersection point
-        if (intersect_x.size() == 0)
-        {
+        if (intersect_x.size() == 0){
             intersect_x.push_back(bin_rect.tr_x);
             intersect_x.push_back(bin_rect.bl_x);
         }
         // add bin boundary as intersection
         // when normal did not overlap with bin boundary
-        else
-        {
+        else{
             if (intersect_x[0] > bin_rect.bl_x)
                 intersect_x.insert(intersect_x.begin(), bin_rect.bl_x);
             if (intersect_x.back() < bin_rect.tr_x)
@@ -548,40 +482,33 @@ vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j, int s)
         stable_sort(intersect_x.begin(), intersect_x.end());
         intersect_x.erase(unique(intersect_x.begin(), intersect_x.end()), intersect_x.end());
 
-        for (int in_x = 0; in_x < intersect_x.size() - 1; in_x++)
-        {
+        for (int in_x = 0; in_x < intersect_x.size() - 1; in_x++){
             not_poly = 1;
             // for intersection points, filter out normal poly
-            for (auto v : poly_bin_instersect)
-            {
+            for (auto v : poly_bin_instersect){
                 if ((intersect_y[in_y] >= v.bl_y && intersect_y[in_y] <= v.tr_y) &&
-                    (intersect_y[in_y + 1] >= v.bl_y && intersect_y[in_y + 1] <= v.tr_y))
-                {
+                    (intersect_y[in_y + 1] >= v.bl_y && intersect_y[in_y + 1] <= v.tr_y)){
                     // intersection point = normal bl and tr
-                    if ((intersect_x[in_x] == v.bl_x) && (intersect_x[in_x + 1] == v.tr_x))
-                    {
+                    if ((intersect_x[in_x] == v.bl_x) && (intersect_x[in_x + 1] == v.tr_x)){
                         not_poly = 0;
                         //cout << "intersection point = normal bl and tr " << endl;
                     }
 
                     // intersection in normal poly, filter out overlap normal poly
-                    if ((intersect_x[in_x] > v.bl_x) && (intersect_x[in_x] < v.tr_x))
-                    {
+                    if ((intersect_x[in_x] > v.bl_x) && (intersect_x[in_x] < v.tr_x)){
                         not_poly = 0;
                         //cout << " x intersection in normal poly, filter out overlap normal poly" << endl;
                     }
 
                     // intersection in normal poly, filter out overlap normal poly
-                    if ((intersect_x[in_x + 1] > v.bl_x) && (intersect_x[in_x + 1] < v.tr_x))
-                    {
+                    if ((intersect_x[in_x + 1] > v.bl_x) && (intersect_x[in_x + 1] < v.tr_x)){
                         not_poly = 0;
                         //cout << "x + 1 intersection in normal poly, filter out overlap normal poly" << endl;
                     }
                 }
             }
 
-            if (not_poly)
-            {
+            if (not_poly){
                 temp.bl_x = intersect_x[in_x];
                 temp.bl_y = intersect_y[in_y];
                 temp.tr_x = intersect_x[in_x + 1];
@@ -598,8 +525,7 @@ vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j, int s)
     vector<bool> not_merge;
 
     // for each retangle in no_merge_list, not_merge = 1
-    for (int c = 0; c < no_merge_list.size(); c++)
-    {
+    for (int c = 0; c < no_merge_list.size(); c++){
         not_merge.push_back(1);
     }
 
@@ -610,14 +536,12 @@ vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j, int s)
     net_temp.net_id = 0;
     net_temp.layer = layer;
 
-    for (int c = 0; c < no_merge_list.size(); c++)
-    {
+    for (int c = 0; c < no_merge_list.size(); c++){
         // if this rectangle did not merge yet
         before_merge_y_list.clear();
         after_merge_y_list.clear();
 
-        if (not_merge[c])
-        {
+        if (not_merge[c]){
             // set not_merge[c] = 0
             not_merge[c] = 0;
 
@@ -625,12 +549,10 @@ vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j, int s)
             before_merge_y_list.push_back(no_merge_list[c].tr_y);
 
             // find rectangle with the same bl_y and t_y
-            for (int d = c + 1; d < no_merge_list.size(); d++)
-            {
+            for (int d = c + 1; d < no_merge_list.size(); d++){
                 // if no_merge_list[d] and no_merge_list[c] have same bl_y and tr_y
                 if ((no_merge_list[d].bl_x == no_merge_list[c].bl_x) &&
-                    (no_merge_list[d].tr_x == no_merge_list[c].tr_x))
-                {
+                    (no_merge_list[d].tr_x == no_merge_list[c].tr_x)){
                     // set not_merge[d] = 0
                     not_merge[d] = 0;
 
@@ -644,18 +566,15 @@ vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j, int s)
             // merge x point
             stable_sort(before_merge_y_list.begin(), before_merge_y_list.end());
 
-            for (int d = 0; d < before_merge_y_list.size() - 1;)
-            {
+            for (int d = 0; d < before_merge_y_list.size() - 1;){
                 //cout << "hihi 1" << endl;
                 // if not duplicate, push into after_merge_x_list
-                if (before_merge_y_list[d] != before_merge_y_list[d + 1])
-                {
+                if (before_merge_y_list[d] != before_merge_y_list[d + 1]){
                     after_merge_y_list.push_back(before_merge_y_list[d]);
                     d++;
                 }
                 // if before_merge_x_list[d] == before_merge_x_list[d+1], skip this two points
-                else
-                {
+                else{
                     d += 2;
                 }
             }
@@ -663,8 +582,7 @@ vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j, int s)
             after_merge_y_list.push_back(before_merge_y_list.back());
 
             // push merge rectangle into init_fill_list
-            for (int d = 0; d < after_merge_y_list.size() - 1; d += 2)
-            {
+            for (int d = 0; d < after_merge_y_list.size() - 1; d += 2){
                 net_temp.rect.bl_x = no_merge_list[c].bl_x;
                 net_temp.rect.tr_x = no_merge_list[c].tr_x;
                 net_temp.rect.bl_y = after_merge_y_list[d];
@@ -691,8 +609,7 @@ vector<Rectangle> Layout::find_fill_region_y(int layer, int i, int j, int s)
 // int s: number of bins s = 1: bin based, s = 2 window based
 // this function directly fill the possible filling regions 
 // no metal call is needed after this function
-void Layout::random_fill(int layer, int i, int j, int s)
-{
+void Layout::random_fill(int layer, int i, int j, int s){
     bool check;
     Rectangle bin_rect;
     bin_rect.set_rectangle(i * bin_size, j * bin_size, (i+s) * bin_size, (j+s) * bin_size);
@@ -731,8 +648,7 @@ void Layout::random_fill(int layer, int i, int j, int s)
     }   
 }
 
-void Layout::random_expand(Layout::net& _net, int layer, int i, int j, int s, int step, string mode)
-{
+void Layout::random_expand(Layout::net& _net, int layer, int i, int j, int s, int step, string mode){
     net net_expand;
     bool check_expand;
 
@@ -763,5 +679,193 @@ void Layout::random_expand(Layout::net& _net, int layer, int i, int j, int s, in
 
         if (check_expand == true) 
             _net = net_expand;
+    }
+}
+
+
+double Layout::find_cost(readprocess& process, const Rectangle& _rec, int layer){
+    double cost = 0.0;
+    Rectangle search_bin;
+    int area_temp = 0;
+    double cap_temp = 0.0;
+    // weights
+    const double w1 = 2;  // between fill & PG_net 
+    const double w2 = 5;  // between fill & fill / fill & noncritical normal
+    const double w3 = 10; // between fill & critical normal
+
+    search_bin.bl_x = _rec.bl_x / bin_size;
+    search_bin.bl_y = _rec.bl_y / bin_size;
+    search_bin.tr_x = (_rec.tr_x - 1) / bin_size;
+    search_bin.tr_y = (_rec.tr_y - 1) / bin_size;
+
+    if(layer == 9){
+        return 0;
+    }
+    else{
+        for(int i = search_bin.bl_x; i <= search_bin.tr_x; i++){
+            for(int j = search_bin.bl_y; j <= search_bin.tr_y; j++){
+                // Checking Layer = layer - 1 
+                // Compare to normal
+                for(auto k : *(grid[layer-1][i][j].normal)){
+                    area_temp = area_overlap(_rec,normal_list[k].rect);
+                    if(area_temp != 0){
+                        cap_temp = process.find_area(layer-1, layer, area_temp);
+                        // cap_temp will multiply by a constant and accumulate to cost
+                        if(normal_list[k].net_id == 0){ // If PG_net
+                            cost += cap_temp * w1;
+                        }
+                        else if(Is_critical(k)){        // If critical net
+                            cost += cap_temp * w3;
+                        }
+                        else{
+                            cost += cap_temp * w2;      // Not-critical net
+                        }
+                    }
+                }
+                // Compare to fill
+                for(auto k : *(grid[layer-1][i][j].fill)){
+                    area_temp = area_overlap(_rec,fill_list[k].rect);
+                    if(area_temp != 0){
+                        cap_temp = process.find_area(layer-1, layer, area_temp);
+                        // cap_temp will multiply by a constant and accumulate to cost
+                        cost += cap_temp * w2;
+                    }
+                }
+                // Checking Layer = layer + 1 
+                // Compare to normal
+                for(auto k : *(grid[layer+1][i][j].normal)){
+                    area_temp = area_overlap(_rec,normal_list[k].rect);
+                    if(area_temp != 0){
+                        cap_temp = process.find_area(layer, layer+1, area_temp);
+                        // cap_temp will multiply by a constant and accumulate to cost
+                        if(normal_list[k].net_id == 0){ // If PG_net
+                            cost += cap_temp * w1;
+                        }
+                        else if(Is_critical(k)){        // If critical net
+                            cost += cap_temp * w3;
+                        }
+                        else{
+                            cost += cap_temp * w2;      // Not-critical net
+                        }
+                    }
+                }
+                // Compare to fill
+                for(auto k : *(grid[layer+1][i][j].fill)){
+                    area_temp = area_overlap(_rec,fill_list[k].rect);
+                    if(area_temp != 0){
+                        cap_temp = process.find_area(layer, layer+1, area_temp);
+                        // cap_temp will multiply by a constant and accumulate to cost
+                        cost += cap_temp * w2;
+                    }
+                }
+            }
+        }
+        return cost;
+    }
+}
+
+void Layout::layer_optimization(readprocess& process, int layer){
+    int range_x = normal_list[0].rect.tr_x / bin_size;
+    int range_y = normal_list[0].rect.tr_y / bin_size;
+
+    for (int i = 0; i < range_x; i++)
+        for (int j = 0; j < range_y; j++)
+            bin_optimization(process, layer, i, j);
+}
+
+void Layout::bin_optimization(readprocess& process, int layer, int i, int j){
+    double target_area = (min_density[layer] * 1) * bin_size * bin_size;
+
+    bin& temp_bin = grid[layer][i][j];
+
+    vector<pair<int, double>> CP_list;
+
+    double ratio = -0.5;
+
+    // initial cost assignment
+    for(auto i : *(temp_bin.fill)){
+        // find cost of a poly
+        if (fill_list[i].cost == 0) {
+            // cost write back to net
+            fill_list[i].cost = find_cost(process, fill_list[i].rect, layer);
+        }
+        double temp_cp;
+        // calculate C/P value
+        temp_cp = fill_list[i].cost / (double)fill_list[i].rect.area();
+        // insert net_id, cost information to map
+        CP_list.push_back(make_pair(i, temp_cp));
+    }
+
+    // sort by fill cost in descending order
+    sort( CP_list.begin(), CP_list.end(),
+                    [](const pair<int, double> &left, const pair<int, double> &right){
+                        return left.second < right.second;} );
+
+    // maybe we need another termination condition
+    while((temp_bin.normal_area + temp_bin.fill_area) > target_area && CP_list.empty() == false){
+        int curr_index;
+        double curr_cost;
+ 
+        curr_index = get<0>(CP_list.back());
+        curr_cost  = get<1>(CP_list.back());
+
+        CP_list.pop_back();
+
+        Rectangle temp_rect(fill_list[curr_index].rect);
+
+        // terminate condition 
+        // if reduction cause density violation
+        if (target_area > temp_bin.normal_area + temp_bin.fill_area - temp_rect.area()) {
+            break;
+        }
+
+
+        // determine width cut ratio
+        vector<Rectangle> candidate;
+
+        // due to quantization error for "double", 
+        // the condition must be more conservative
+        // 1. horizantal resize 
+        if ((1.0+ratio)*temp_rect.width()*0.95 >= min_width[layer]) {
+            candidate.push_back(rect_resize(temp_rect, ratio, 0, 0, 0));
+            candidate.push_back(rect_resize(temp_rect, 0, 0, ratio, 0));
+        }
+        // 2. vertical resize 
+        if ((1.0+ratio)*temp_rect.length()*0.95 >= min_width[layer]) {
+            candidate.push_back(rect_resize(temp_rect, 0, ratio, 0, 0));
+            candidate.push_back(rect_resize(temp_rect, 0, 0, 0, ratio));
+        }
+        // may add more resize methods 
+
+        // if no available resize method
+        // delete the fill
+        double min_cp;
+        Rectangle min_rect;
+
+        if (candidate.empty() == true){
+            delete_fill(curr_index);
+        }
+        else {
+            // find smallest cp = cost/area
+            min_cp = 1.0E10;
+            for (auto c : candidate) {
+                double new_cost = find_cost(process, c, layer); 
+                if (min_cp > new_cost) {
+                    min_cp = new_cost;
+                    min_rect = c;
+                }
+            }
+            if (min_cp > curr_cost) {
+                delete_fill(curr_index);
+            }
+            else {
+                resize_fill(curr_index, min_rect);
+                int index = 0;
+                while(get<1>(CP_list[index]) < min_cp){
+                    index++;
+                }
+                CP_list.insert(CP_list.begin() + index, make_pair(curr_index, min_cp));
+            }
+        }
     }
 }

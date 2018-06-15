@@ -92,7 +92,7 @@ void Layout::dump_statistic(){
 
     cout << "----------------------------" << endl;
     cout << "Dump Statistics" << endl;
-    for (int layer = 0; layer <= 9; layer++) {
+    for (int layer = 1; layer <= 9; layer++) {
         data.clear();   // clean vector
         cout << "Layer " << layer << " ";
         for (int x = 0; x < range_x; x++) {
@@ -104,10 +104,33 @@ void Layout::dump_statistic(){
                 //cout << density << endl;
             }
         }
+
         cout << "Mean = " << getMean(data) << " ";
-        cout << "Stdev = " << getStdDev(data) << endl;
+        cout << "Stdev = " << getStdDev(data) << " ";
+        cout << "Cost = "  << layer_cost(layer) << endl;
+    }   
+}
+void Layout::find_cost_all(readprocess& process){
+    for (int i = 0; i < fill_list.size(); i++){
+        if (fill_list[i].net_id != -1) {
+            fill_list[i].cost = find_cost(process, fill_list[i].rect, fill_list[i].layer);
+        }        
+    }
+}
+
+
+double Layout::layer_cost(int layer)
+{
+    // enumerate all fill with layer = layer, and net_id != -1 
+    // all cost are assumed updated
+    double total_cost = 0.0; 
+    for (int i = 0; i < fill_list.size(); i++){
+        if (fill_list[i].net_id != -1 && fill_list[i].layer == layer) {
+            total_cost += fill_list[i].cost;
+        }        
     }
 
+    return total_cost;  
 }
 
 // dump bin into two files
@@ -179,5 +202,37 @@ void Layout::dump_bin(int layer, int x, int y){
                  "fill\n");
         fill_file.write(s.c_str(), s.length());
     }
+    fill_file.close();
+}
+
+
+void Layout::dump_result()
+{
+    fstream fill_file;
+    string filename, temp;
+
+    Rectangle bound( 
+        normal_list[0].rect.bl_x + offset_x,
+        normal_list[0].rect.bl_y + offset_y,
+        normal_list[0].rect.tr_x + offset_x,
+        normal_list[0].rect.tr_y + offset_y);
+
+    filename.assign("result.cut");
+    fill_file.open(filename.c_str(), ios::out);
+    temp.assign(bound.dump_string() + "; chip boundary\n");
+    fill_file.write(temp.c_str(), temp.length());
+
+    for (auto n : fill_list){
+        Rectangle temp(
+            n.rect.bl_x + offset_x,
+            n.rect.bl_y + offset_y,
+            n.rect.tr_x + offset_x,
+            n.rect.tr_y + offset_y);
+        string s(temp.dump_string() + " " +
+                 to_string(n.net_id) + " " +
+                 "fill\n");
+        fill_file.write(s.c_str(), s.length());
+    }
+
     fill_file.close();
 }
