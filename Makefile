@@ -16,7 +16,7 @@ test4:
 test5:
 	./main ./circuit5/circuit5.config
 clean:
-	rm main *.cut statistics.txt
+	rm main *.cut *.fill
 # Use address sanitizer to check memory
 mem_check:
 	clang++ -std=c++11 -Wall $(SRC) $(LAYOUT) -O3 -o main -fsanitize=address

@@ -206,10 +206,10 @@ void Layout::dump_bin(int layer, int x, int y){
 }
 
 
-void Layout::dump_result()
-{
+void Layout::dump_result(char* filename){
     fstream fill_file;
-    string filename, temp;
+    string name, temp;
+    int index = 1;
 
     Rectangle bound( 
         normal_list[0].rect.bl_x + offset_x,
@@ -217,8 +217,8 @@ void Layout::dump_result()
         normal_list[0].rect.tr_x + offset_x,
         normal_list[0].rect.tr_y + offset_y);
 
-    filename.assign("result.cut");
-    fill_file.open(filename.c_str(), ios::out);
+    name.assign(filename);
+    fill_file.open(name.c_str(), ios::out);
     temp.assign(bound.dump_string() + "; chip boundary\n");
     fill_file.write(temp.c_str(), temp.length());
 
@@ -228,8 +228,8 @@ void Layout::dump_result()
             n.rect.bl_y + offset_y,
             n.rect.tr_x + offset_x,
             n.rect.tr_y + offset_y);
-        string s(temp.dump_string() + " " +
-                 to_string(n.net_id) + " " +
+        string s(to_string(index++) + " " + temp.dump_string() + " " +
+                 to_string(n.net_id) + " " + to_string(n.layer) + " " +
                  "fill\n");
         fill_file.write(s.c_str(), s.length());
     }

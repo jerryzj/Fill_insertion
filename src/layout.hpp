@@ -72,7 +72,7 @@ public:
  
     void find_cost_all(readprocess& process);
     
-    void dump_result();
+    void dump_result(char* filename);
 
     //*************************
     //     Bin structure
